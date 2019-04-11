@@ -11,12 +11,12 @@ tag="v6.1.1"
 
 if [ "${platform}" == "linux" ]; then
     if [ "${arch}" == "x86_64" ]; then
-        tarball_name="mynt-${version}-x86_64-linux-gnu.tar.gz"
+        tarball_name="mynt-${version}-x86_64-linux-static-gnu.tar.gz"
     elif [ "${arch}" == "x86_32" ]; then
-        tarball_name="mynt-${version}-i686-pc-linux-gnu.tar.gz"
+        tarball_name="mynt-${version}-x86_64-linux-static-gnu.tar.gz"
     fi
 elif [ "${platform}" == "darwin" ]; then
-    tarball_name="mynt-${version}-osx64.tar.gz"
+    tarball_name="mynt-x16s-${version}-mac.dmg"
 else
     echo "Mynt binary distribution not available for platform and architecture"
     exit -1
