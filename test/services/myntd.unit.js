@@ -6,8 +6,8 @@ var path = require('path');
 var EventEmitter = require('events').EventEmitter;
 var should = require('chai').should();
 var crypto = require('crypto');
-var ravencore = require('ravencore-lib');
-var _ = ravencore.deps._;
+var myntcore = require('myntcore-lib');
+var _ = myntcore.deps._;
 var sinon = require('sinon');
 var proxyquire = require('proxyquire');
 var fs = require('fs');
@@ -17,21 +17,21 @@ var index = require('../../lib');
 var log = index.log;
 var errors = index.errors;
 
-var Transaction = ravencore.Transaction;
-var readFileSync = sinon.stub().returns(fs.readFileSync(path.resolve(__dirname, '../data/raven.conf')));
-var RavencoinService = proxyquire('../../lib/services/ravend', {
+var Transaction = myntcore.Transaction;
+var readFileSync = sinon.stub().returns(fs.readFileSync(path.resolve(__dirname, '../data/mynt.conf')));
+var MyntService = proxyquire('../../lib/services/myntd', {
   fs: {
     readFileSync: readFileSync
   }
 });
-var defaultRavencoinConf = fs.readFileSync(path.resolve(__dirname, '../data/default.raven.conf'), 'utf8');
+var defaultMyntConf = fs.readFileSync(path.resolve(__dirname, '../data/default.mynt.conf'), 'utf8');
 
-describe('Ravencoin Service', function() {
+describe('Mynt Service', function() {
   var txhex = '01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704ffff001d0104ffffffff0100f2052a0100000043410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac00000000';
 
   var baseConfig = {
     node: {
-      network: ravencore.Networks.testnet
+      network: myntcore.Networks.testnet
     },
     spawn: {
       datadir: 'testdir',
@@ -41,41 +41,41 @@ describe('Ravencoin Service', function() {
 
   describe('@constructor', function() {
     it('will create an instance', function() {
-      var ravend = new RavencoinService(baseConfig);
-      should.exist(ravend);
+      var myntd = new MyntService(baseConfig);
+      should.exist(myntd);
     });
     it('will create an instance without `new`', function() {
-      var ravend = RavencoinService(baseConfig);
-      should.exist(ravend);
+      var myntd = MyntService(baseConfig);
+      should.exist(myntd);
     });
     it('will init caches', function() {
-      var ravend = new RavencoinService(baseConfig);
-      should.exist(ravend.utxosCache);
-      should.exist(ravend.txidsCache);
-      should.exist(ravend.balanceCache);
-      should.exist(ravend.summaryCache);
-      should.exist(ravend.transactionDetailedCache);
+      var myntd = new MyntService(baseConfig);
+      should.exist(myntd.utxosCache);
+      should.exist(myntd.txidsCache);
+      should.exist(myntd.balanceCache);
+      should.exist(myntd.summaryCache);
+      should.exist(myntd.transactionDetailedCache);
 
-      should.exist(ravend.transactionCache);
-      should.exist(ravend.rawTransactionCache);
-      should.exist(ravend.blockCache);
-      should.exist(ravend.rawBlockCache);
-      should.exist(ravend.blockHeaderCache);
-      should.exist(ravend.zmqKnownTransactions);
-      should.exist(ravend.zmqKnownBlocks);
-      should.exist(ravend.lastTip);
-      should.exist(ravend.lastTipTimeout);
+      should.exist(myntd.transactionCache);
+      should.exist(myntd.rawTransactionCache);
+      should.exist(myntd.blockCache);
+      should.exist(myntd.rawBlockCache);
+      should.exist(myntd.blockHeaderCache);
+      should.exist(myntd.zmqKnownTransactions);
+      should.exist(myntd.zmqKnownBlocks);
+      should.exist(myntd.lastTip);
+      should.exist(myntd.lastTipTimeout);
     });
     it('will init clients', function() {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.should.deep.equal([]);
-      ravend.nodesIndex.should.equal(0);
-      ravend.nodes.push({client: sinon.stub()});
-      should.exist(ravend.client);
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.should.deep.equal([]);
+      myntd.nodesIndex.should.equal(0);
+      myntd.nodes.push({client: sinon.stub()});
+      should.exist(myntd.client);
     });
     it('will set subscriptions', function() {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.subscriptions.should.deep.equal({
+      var myntd = new MyntService(baseConfig);
+      myntd.subscriptions.should.deep.equal({
         address: {},
         rawtransaction: [],
         hashblock: []
@@ -85,24 +85,24 @@ describe('Ravencoin Service', function() {
 
   describe('#_initDefaults', function() {
     it('will set transaction concurrency', function() {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._initDefaults({transactionConcurrency: 10});
-      ravend.transactionConcurrency.should.equal(10);
-      ravend._initDefaults({});
-      ravend.transactionConcurrency.should.equal(5);
+      var myntd = new MyntService(baseConfig);
+      myntd._initDefaults({transactionConcurrency: 10});
+      myntd.transactionConcurrency.should.equal(10);
+      myntd._initDefaults({});
+      myntd.transactionConcurrency.should.equal(5);
     });
   });
 
   describe('@dependencies', function() {
     it('will have no dependencies', function() {
-      RavencoinService.dependencies.should.deep.equal([]);
+      MyntService.dependencies.should.deep.equal([]);
     });
   });
 
   describe('#getAPIMethods', function() {
     it('will return spec', function() {
-      var ravend = new RavencoinService(baseConfig);
-      var methods = ravend.getAPIMethods();
+      var myntd = new MyntService(baseConfig);
+      var methods = myntd.getAPIMethods();
       should.exist(methods);
       methods.length.should.equal(22);
     });
@@ -110,44 +110,44 @@ describe('Ravencoin Service', function() {
 
   describe('#getPublishEvents', function() {
     it('will return spec', function() {
-      var ravend = new RavencoinService(baseConfig);
-      var events = ravend.getPublishEvents();
+      var myntd = new MyntService(baseConfig);
+      var events = myntd.getPublishEvents();
       should.exist(events);
       events.length.should.equal(3);
-      events[0].name.should.equal('ravend/rawtransaction');
-      events[0].scope.should.equal(ravend);
+      events[0].name.should.equal('myntd/rawtransaction');
+      events[0].scope.should.equal(myntd);
       events[0].subscribe.should.be.a('function');
       events[0].unsubscribe.should.be.a('function');
-      events[1].name.should.equal('ravend/hashblock');
-      events[1].scope.should.equal(ravend);
+      events[1].name.should.equal('myntd/hashblock');
+      events[1].scope.should.equal(myntd);
       events[1].subscribe.should.be.a('function');
       events[1].unsubscribe.should.be.a('function');
-      events[2].name.should.equal('ravend/addresstxid');
-      events[2].scope.should.equal(ravend);
+      events[2].name.should.equal('myntd/addresstxid');
+      events[2].scope.should.equal(myntd);
       events[2].subscribe.should.be.a('function');
       events[2].unsubscribe.should.be.a('function');
     });
     it('will call subscribe/unsubscribe with correct args', function() {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.subscribe = sinon.stub();
-      ravend.unsubscribe = sinon.stub();
-      var events = ravend.getPublishEvents();
+      var myntd = new MyntService(baseConfig);
+      myntd.subscribe = sinon.stub();
+      myntd.unsubscribe = sinon.stub();
+      var events = myntd.getPublishEvents();
 
       events[0].subscribe('test');
-      ravend.subscribe.args[0][0].should.equal('rawtransaction');
-      ravend.subscribe.args[0][1].should.equal('test');
+      myntd.subscribe.args[0][0].should.equal('rawtransaction');
+      myntd.subscribe.args[0][1].should.equal('test');
 
       events[0].unsubscribe('test');
-      ravend.unsubscribe.args[0][0].should.equal('rawtransaction');
-      ravend.unsubscribe.args[0][1].should.equal('test');
+      myntd.unsubscribe.args[0][0].should.equal('rawtransaction');
+      myntd.unsubscribe.args[0][1].should.equal('test');
 
       events[1].subscribe('test');
-      ravend.subscribe.args[1][0].should.equal('hashblock');
-      ravend.subscribe.args[1][1].should.equal('test');
+      myntd.subscribe.args[1][0].should.equal('hashblock');
+      myntd.subscribe.args[1][1].should.equal('test');
 
       events[1].unsubscribe('test');
-      ravend.unsubscribe.args[1][0].should.equal('hashblock');
-      ravend.unsubscribe.args[1][1].should.equal('test');
+      myntd.unsubscribe.args[1][0].should.equal('hashblock');
+      myntd.unsubscribe.args[1][1].should.equal('test');
     });
   });
 
@@ -160,14 +160,14 @@ describe('Ravencoin Service', function() {
       sandbox.restore();
     });
     it('will push to subscriptions', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter = {};
-      ravend.subscribe('hashblock', emitter);
-      ravend.subscriptions.hashblock[0].should.equal(emitter);
+      myntd.subscribe('hashblock', emitter);
+      myntd.subscriptions.hashblock[0].should.equal(emitter);
 
       var emitter2 = {};
-      ravend.subscribe('rawtransaction', emitter2);
-      ravend.subscriptions.rawtransaction[0].should.equal(emitter2);
+      myntd.subscribe('rawtransaction', emitter2);
+      myntd.subscriptions.rawtransaction[0].should.equal(emitter2);
     });
   });
 
@@ -180,34 +180,34 @@ describe('Ravencoin Service', function() {
       sandbox.restore();
     });
     it('will remove item from subscriptions', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter1 = {};
       var emitter2 = {};
       var emitter3 = {};
       var emitter4 = {};
       var emitter5 = {};
-      ravend.subscribe('hashblock', emitter1);
-      ravend.subscribe('hashblock', emitter2);
-      ravend.subscribe('hashblock', emitter3);
-      ravend.subscribe('hashblock', emitter4);
-      ravend.subscribe('hashblock', emitter5);
-      ravend.subscriptions.hashblock.length.should.equal(5);
+      myntd.subscribe('hashblock', emitter1);
+      myntd.subscribe('hashblock', emitter2);
+      myntd.subscribe('hashblock', emitter3);
+      myntd.subscribe('hashblock', emitter4);
+      myntd.subscribe('hashblock', emitter5);
+      myntd.subscriptions.hashblock.length.should.equal(5);
 
-      ravend.unsubscribe('hashblock', emitter3);
-      ravend.subscriptions.hashblock.length.should.equal(4);
-      ravend.subscriptions.hashblock[0].should.equal(emitter1);
-      ravend.subscriptions.hashblock[1].should.equal(emitter2);
-      ravend.subscriptions.hashblock[2].should.equal(emitter4);
-      ravend.subscriptions.hashblock[3].should.equal(emitter5);
+      myntd.unsubscribe('hashblock', emitter3);
+      myntd.subscriptions.hashblock.length.should.equal(4);
+      myntd.subscriptions.hashblock[0].should.equal(emitter1);
+      myntd.subscriptions.hashblock[1].should.equal(emitter2);
+      myntd.subscriptions.hashblock[2].should.equal(emitter4);
+      myntd.subscriptions.hashblock[3].should.equal(emitter5);
     });
     it('will not remove item an already unsubscribed item', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter1 = {};
       var emitter3 = {};
-      ravend.subscriptions.hashblock= [emitter1];
-      ravend.unsubscribe('hashblock', emitter3);
-      ravend.subscriptions.hashblock.length.should.equal(1);
-      ravend.subscriptions.hashblock[0].should.equal(emitter1);
+      myntd.subscriptions.hashblock= [emitter1];
+      myntd.unsubscribe('hashblock', emitter3);
+      myntd.subscriptions.hashblock.length.should.equal(1);
+      myntd.subscriptions.hashblock[0].should.equal(emitter1);
     });
   });
 
@@ -220,33 +220,33 @@ describe('Ravencoin Service', function() {
       sandbox.restore();
     });
     it('will not an invalid address', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter = new EventEmitter();
-      ravend.subscribeAddress(emitter, ['invalidaddress']);
-      should.not.exist(ravend.subscriptions.address['invalidaddress']);
+      myntd.subscribeAddress(emitter, ['invalidaddress']);
+      should.not.exist(myntd.subscriptions.address['invalidaddress']);
     });
     it('will add a valid address', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter = new EventEmitter();
-      ravend.subscribeAddress(emitter, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      should.exist(ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      myntd.subscribeAddress(emitter, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      should.exist(myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
     });
     it('will handle multiple address subscribers', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      ravend.subscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      ravend.subscribeAddress(emitter2, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      should.exist(ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(2);
+      myntd.subscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      myntd.subscribeAddress(emitter2, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      should.exist(myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(2);
     });
     it('will not add the same emitter twice', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter1 = new EventEmitter();
-      ravend.subscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      ravend.subscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      should.exist(ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(1);
+      myntd.subscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      myntd.subscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      should.exist(myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(1);
     });
   });
 
@@ -259,61 +259,61 @@ describe('Ravencoin Service', function() {
       sandbox.restore();
     });
     it('it will remove a subscription', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      ravend.subscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      ravend.subscribeAddress(emitter2, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      should.exist(ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(2);
-      ravend.unsubscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(1);
+      myntd.subscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      myntd.subscribeAddress(emitter2, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      should.exist(myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(2);
+      myntd.unsubscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(1);
     });
     it('will unsubscribe subscriptions for an emitter', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'] = [emitter1, emitter2];
-      ravend.unsubscribeAddress(emitter1);
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(1);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'] = [emitter1, emitter2];
+      myntd.unsubscribeAddress(emitter1);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(1);
     });
     it('will NOT unsubscribe subscription with missing address', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'] = [emitter1, emitter2];
-      ravend.unsubscribeAddress(emitter1, ['RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN']);
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(2);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'] = [emitter1, emitter2];
+      myntd.unsubscribeAddress(emitter1, ['RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN']);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(2);
     });
     it('will NOT unsubscribe subscription with missing emitter', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'] = [emitter2];
-      ravend.unsubscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(1);
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'][0].should.equal(emitter2);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'] = [emitter2];
+      myntd.unsubscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(1);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'][0].should.equal(emitter2);
     });
     it('will remove empty addresses', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'] = [emitter1, emitter2];
-      ravend.unsubscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      ravend.unsubscribeAddress(emitter2, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
-      should.not.exist(ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'] = [emitter1, emitter2];
+      myntd.unsubscribeAddress(emitter1, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      myntd.unsubscribeAddress(emitter2, ['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
+      should.not.exist(myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br']);
     });
     it('will unsubscribe emitter for all addresses', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'] = [emitter1, emitter2];
-      ravend.subscriptions.address['RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'] = [emitter1, emitter2];
-      sinon.spy(ravend, 'unsubscribeAddressAll');
-      ravend.unsubscribeAddress(emitter1);
-      ravend.unsubscribeAddressAll.callCount.should.equal(1);
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(1);
-      ravend.subscriptions.address['RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'].length.should.equal(1);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'] = [emitter1, emitter2];
+      myntd.subscriptions.address['RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'] = [emitter1, emitter2];
+      sinon.spy(myntd, 'unsubscribeAddressAll');
+      myntd.unsubscribeAddress(emitter1);
+      myntd.unsubscribeAddressAll.callCount.should.equal(1);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(1);
+      myntd.subscriptions.address['RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'].length.should.equal(1);
     });
   });
 
@@ -326,26 +326,26 @@ describe('Ravencoin Service', function() {
       sandbox.restore();
     });
     it('will unsubscribe emitter for all addresses', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var emitter1 = new EventEmitter();
       var emitter2 = new EventEmitter();
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'] = [emitter1, emitter2];
-      ravend.subscriptions.address['RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'] = [emitter1, emitter2];
-      ravend.subscriptions.address['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'] = [emitter2];
-      ravend.subscriptions.address['rAfsiNFiHsvDwEA1JsaE9Qmad5CgPVbELh'] = [emitter1];
-      ravend.unsubscribeAddress(emitter1);
-      ravend.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(1);
-      ravend.subscriptions.address['RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'].length.should.equal(1);
-      ravend.subscriptions.address['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'].length.should.equal(1);
-      should.not.exist(ravend.subscriptions.address['rAfsiNFiHsvDwEA1JsaE9Qmad5CgPVbELh']);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'] = [emitter1, emitter2];
+      myntd.subscriptions.address['RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'] = [emitter1, emitter2];
+      myntd.subscriptions.address['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'] = [emitter2];
+      myntd.subscriptions.address['rAfsiNFiHsvDwEA1JsaE9Qmad5CgPVbELh'] = [emitter1];
+      myntd.unsubscribeAddress(emitter1);
+      myntd.subscriptions.address['2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br'].length.should.equal(1);
+      myntd.subscriptions.address['RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'].length.should.equal(1);
+      myntd.subscriptions.address['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'].length.should.equal(1);
+      should.not.exist(myntd.subscriptions.address['rAfsiNFiHsvDwEA1JsaE9Qmad5CgPVbELh']);
     });
   });
 
   describe('#_getDefaultConfig', function() {
     it('will generate config file from defaults', function() {
-      var ravend = new RavencoinService(baseConfig);
-      var config = ravend._getDefaultConfig();
-      config.should.equal(defaultRavencoinConf);
+      var myntd = new MyntService(baseConfig);
+      var config = myntd._getDefaultConfig();
+      config.should.equal(defaultMyntConf);
     });
   });
 
@@ -357,8 +357,8 @@ describe('Ravencoin Service', function() {
     afterEach(function() {
       sandbox.restore();
     });
-    it('will parse a raven.conf file', function() {
-      var TestRavencoin = proxyquire('../../lib/services/ravend', {
+    it('will parse a mynt.conf file', function() {
+      var TestMynt = proxyquire('../../lib/services/myntd', {
         fs: {
           readFileSync: readFileSync,
           existsSync: sinon.stub().returns(true),
@@ -368,12 +368,12 @@ describe('Ravencoin Service', function() {
           sync: sinon.stub()
         }
       });
-      var ravend = new TestRavencoin(baseConfig);
-      ravend.options.spawn.datadir = '/tmp/.raven';
+      var myntd = new TestMynt(baseConfig);
+      myntd.options.spawn.datadir = '/tmp/.mynt';
       var node = {};
-      ravend._loadSpawnConfiguration(node);
-      should.exist(ravend.spawn.config);
-      ravend.spawn.config.should.deep.equal({
+      myntd._loadSpawnConfiguration(node);
+      should.exist(myntd.spawn.config);
+      myntd.spawn.config.should.deep.equal({
         addressindex: 1,
         checkblocks: 144,
         dbcache: 8192,
@@ -381,7 +381,7 @@ describe('Ravencoin Service', function() {
         port: 20000,
         rpcport: 50001,
         rpcallowip: '127.0.0.1',
-        rpcuser: 'ravencoin',
+        rpcuser: 'mynt',
         rpcpassword: 'local321',
         server: 1,
         spentindex: 1,
@@ -394,7 +394,7 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will expand relative datadir to absolute path', function() {
-      var TestRavencoin = proxyquire('../../lib/services/ravend', {
+      var TestMynt = proxyquire('../../lib/services/myntd', {
         fs: {
           readFileSync: readFileSync,
           existsSync: sinon.stub().returns(true),
@@ -406,40 +406,40 @@ describe('Ravencoin Service', function() {
       });
       var config = {
         node: {
-          network: ravencore.Networks.testnet,
-          configPath: '/tmp/.ravencore/ravencore-node.json'
+          network: myntcore.Networks.testnet,
+          configPath: '/tmp/.myntcore/myntcore-node.json'
         },
         spawn: {
           datadir: './data',
           exec: 'testpath'
         }
       };
-      var ravend = new TestRavencoin(config);
-      ravend.options.spawn.datadir = './data';
+      var myntd = new TestMynt(config);
+      myntd.options.spawn.datadir = './data';
       var node = {};
-      ravend._loadSpawnConfiguration(node);
-      ravend.options.spawn.datadir.should.equal('/tmp/.ravencore/data');
+      myntd._loadSpawnConfiguration(node);
+      myntd.options.spawn.datadir.should.equal('/tmp/.myntcore/data');
     });
     it('should throw an exception if txindex isn\'t enabled in the configuration', function() {
-      var TestRavencoin = proxyquire('../../lib/services/ravend', {
+      var TestMynt = proxyquire('../../lib/services/myntd', {
         fs: {
-          readFileSync: sinon.stub().returns(fs.readFileSync(__dirname + '/../data/badraven.conf')),
+          readFileSync: sinon.stub().returns(fs.readFileSync(__dirname + '/../data/badmynt.conf')),
           existsSync: sinon.stub().returns(true),
         },
         mkdirp: {
           sync: sinon.stub()
         }
       });
-      var ravend = new TestRavencoin(baseConfig);
+      var myntd = new TestMynt(baseConfig);
       (function() {
-        ravend._loadSpawnConfiguration({datadir: './test'});
-      }).should.throw(ravencore.errors.InvalidState);
+        myntd._loadSpawnConfiguration({datadir: './test'});
+      }).should.throw(myntcore.errors.InvalidState);
     });
     it('should NOT set https options if node https options are set', function() {
       var writeFileSync = function(path, config) {
-        config.should.equal(defaultRavencoinConf);
+        config.should.equal(defaultMyntConf);
       };
-      var TestRavencoin = proxyquire('../../lib/services/ravend', {
+      var TestMynt = proxyquire('../../lib/services/myntd', {
         fs: {
           writeFileSync: writeFileSync,
           readFileSync: readFileSync,
@@ -465,10 +465,10 @@ describe('Ravencoin Service', function() {
           exec: 'testexec'
         }
       };
-      var ravend = new TestRavencoin(config);
-      ravend.options.spawn.datadir = '/tmp/.raven';
+      var myntd = new TestMynt(config);
+      myntd.options.spawn.datadir = '/tmp/.mynt';
       var node = {};
-      ravend._loadSpawnConfiguration(node);
+      myntd._loadSpawnConfiguration(node);
     });
   });
 
@@ -480,8 +480,8 @@ describe('Ravencoin Service', function() {
     afterEach(function() {
       sandbox.restore();
     });
-    it('should warn the user if reindex is set to 1 in the raven.conf file', function() {
-      var ravend = new RavencoinService(baseConfig);
+    it('should warn the user if reindex is set to 1 in the mynt.conf file', function() {
+      var myntd = new MyntService(baseConfig);
       var config = {
         txindex: 1,
         addressindex: 1,
@@ -492,12 +492,12 @@ describe('Ravencoin Service', function() {
         reindex: 1
       };
       var node = {};
-      ravend._checkConfigIndexes(config, node);
+      myntd._checkConfigIndexes(config, node);
       log.warn.callCount.should.equal(1);
       node._reindex.should.equal(true);
     });
     it('should warn if zmq port and hosts do not match', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var config = {
         txindex: 1,
         addressindex: 1,
@@ -509,113 +509,113 @@ describe('Ravencoin Service', function() {
       };
       var node = {};
       (function() {
-        ravend._checkConfigIndexes(config, node);
+        myntd._checkConfigIndexes(config, node);
       }).should.throw('"zmqpubrawtx" and "zmqpubhashblock"');
     });
   });
 
   describe('#_resetCaches', function() {
     it('will reset LRU caches', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var keys = [];
       for (var i = 0; i < 10; i++) {
         keys.push(crypto.randomBytes(32));
-        ravend.transactionDetailedCache.set(keys[i], {});
-        ravend.utxosCache.set(keys[i], {});
-        ravend.txidsCache.set(keys[i], {});
-        ravend.balanceCache.set(keys[i], {});
-        ravend.summaryCache.set(keys[i], {});
+        myntd.transactionDetailedCache.set(keys[i], {});
+        myntd.utxosCache.set(keys[i], {});
+        myntd.txidsCache.set(keys[i], {});
+        myntd.balanceCache.set(keys[i], {});
+        myntd.summaryCache.set(keys[i], {});
       }
-      ravend._resetCaches();
-      should.equal(ravend.transactionDetailedCache.get(keys[0]), undefined);
-      should.equal(ravend.utxosCache.get(keys[0]), undefined);
-      should.equal(ravend.txidsCache.get(keys[0]), undefined);
-      should.equal(ravend.balanceCache.get(keys[0]), undefined);
-      should.equal(ravend.summaryCache.get(keys[0]), undefined);
+      myntd._resetCaches();
+      should.equal(myntd.transactionDetailedCache.get(keys[0]), undefined);
+      should.equal(myntd.utxosCache.get(keys[0]), undefined);
+      should.equal(myntd.txidsCache.get(keys[0]), undefined);
+      should.equal(myntd.balanceCache.get(keys[0]), undefined);
+      should.equal(myntd.summaryCache.get(keys[0]), undefined);
     });
   });
 
   describe('#_tryAllClients', function() {
     it('will retry for each node client', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.tryAllInterval = 1;
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.tryAllInterval = 1;
+      myntd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('test'))
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('test'))
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArg(0)
         }
       });
-      ravend._tryAllClients(function(client, next) {
+      myntd._tryAllClients(function(client, next) {
         client.getInfo(next);
       }, function(err) {
         if (err) {
           return done(err);
         }
-        ravend.nodes[0].client.getInfo.callCount.should.equal(1);
-        ravend.nodes[1].client.getInfo.callCount.should.equal(1);
-        ravend.nodes[2].client.getInfo.callCount.should.equal(1);
+        myntd.nodes[0].client.getInfo.callCount.should.equal(1);
+        myntd.nodes[1].client.getInfo.callCount.should.equal(1);
+        myntd.nodes[2].client.getInfo.callCount.should.equal(1);
         done();
       });
     });
     it('will start using the current node index (round-robin)', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.tryAllInterval = 1;
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.tryAllInterval = 1;
+      myntd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('2'))
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('3'))
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('1'))
         }
       });
-      ravend.nodesIndex = 2;
-      ravend._tryAllClients(function(client, next) {
+      myntd.nodesIndex = 2;
+      myntd._tryAllClients(function(client, next) {
         client.getInfo(next);
       }, function(err) {
         err.should.be.instanceOf(Error);
         err.message.should.equal('3');
-        ravend.nodes[0].client.getInfo.callCount.should.equal(1);
-        ravend.nodes[1].client.getInfo.callCount.should.equal(1);
-        ravend.nodes[2].client.getInfo.callCount.should.equal(1);
-        ravend.nodesIndex.should.equal(2);
+        myntd.nodes[0].client.getInfo.callCount.should.equal(1);
+        myntd.nodes[1].client.getInfo.callCount.should.equal(1);
+        myntd.nodes[2].client.getInfo.callCount.should.equal(1);
+        myntd.nodesIndex.should.equal(2);
         done();
       });
     });
     it('will get error if all clients fail', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.tryAllInterval = 1;
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.tryAllInterval = 1;
+      myntd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('test'))
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('test'))
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getInfo: sinon.stub().callsArgWith(0, new Error('test'))
         }
       });
-      ravend._tryAllClients(function(client, next) {
+      myntd._tryAllClients(function(client, next) {
         client.getInfo(next);
       }, function(err) {
         should.exist(err);
@@ -627,9 +627,9 @@ describe('Ravencoin Service', function() {
   });
 
   describe('#_wrapRPCError', function() {
-    it('will convert ravend-rpc error object into JavaScript error', function() {
-      var ravend = new RavencoinService(baseConfig);
-      var error = ravend._wrapRPCError({message: 'Test error', code: -1});
+    it('will convert myntd-rpc error object into JavaScript error', function() {
+      var myntd = new MyntService(baseConfig);
+      var error = myntd._wrapRPCError({message: 'Test error', code: -1});
       error.should.be.an.instanceof(errors.RPCError);
       error.code.should.equal(-1);
       error.message.should.equal('Test error');
@@ -645,10 +645,10 @@ describe('Ravencoin Service', function() {
       sandbox.restore();
     });
     it('will set height and genesis buffer', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var genesisBuffer = new Buffer([]);
-      ravend.getRawBlock = sinon.stub().callsArgWith(1, null, genesisBuffer);
-      ravend.nodes.push({
+      myntd.getRawBlock = sinon.stub().callsArgWith(1, null, genesisBuffer);
+      myntd.nodes.push({
         client: {
           getBestBlockHash: function(callback) {
             callback(null, {
@@ -671,45 +671,45 @@ describe('Ravencoin Service', function() {
           }
         }
       });
-      ravend._initChain(function() {
+      myntd._initChain(function() {
         log.info.callCount.should.equal(1);
-        ravend.getRawBlock.callCount.should.equal(1);
-        ravend.getRawBlock.args[0][0].should.equal('genesishash');
-        ravend.height.should.equal(5000);
-        ravend.genesisBuffer.should.equal(genesisBuffer);
+        myntd.getRawBlock.callCount.should.equal(1);
+        myntd.getRawBlock.args[0][0].should.equal('genesishash');
+        myntd.height.should.equal(5000);
+        myntd.genesisBuffer.should.equal(genesisBuffer);
         done();
       });
     });
     it('it will handle error from getBestBlockHash', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, {code: -1, message: 'error'});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBestBlockHash: getBestBlockHash
         }
       });
-      ravend._initChain(function(err) {
+      myntd._initChain(function(err) {
         err.should.be.instanceOf(Error);
         done();
       });
     });
     it('it will handle error from getBlock', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {});
       var getBlock = sinon.stub().callsArgWith(1, {code: -1, message: 'error'});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBestBlockHash: getBestBlockHash,
           getBlock: getBlock
         }
       });
-      ravend._initChain(function(err) {
+      myntd._initChain(function(err) {
         err.should.be.instanceOf(Error);
         done();
       });
     });
     it('it will handle error from getBlockHash', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {});
       var getBlock = sinon.stub().callsArgWith(1, null, {
         result: {
@@ -717,20 +717,20 @@ describe('Ravencoin Service', function() {
         }
       });
       var getBlockHash = sinon.stub().callsArgWith(1, {code: -1, message: 'error'});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBestBlockHash: getBestBlockHash,
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      ravend._initChain(function(err) {
+      myntd._initChain(function(err) {
         err.should.be.instanceOf(Error);
         done();
       });
     });
     it('it will handle error from getRawBlock', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {});
       var getBlock = sinon.stub().callsArgWith(1, null, {
         result: {
@@ -738,15 +738,15 @@ describe('Ravencoin Service', function() {
         }
       });
       var getBlockHash = sinon.stub().callsArgWith(1, null, {});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBestBlockHash: getBestBlockHash,
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      ravend.getRawBlock = sinon.stub().callsArgWith(1, new Error('test'));
-      ravend._initChain(function(err) {
+      myntd.getRawBlock = sinon.stub().callsArgWith(1, new Error('test'));
+      myntd._initChain(function(err) {
         err.should.be.instanceOf(Error);
         done();
       });
@@ -755,176 +755,176 @@ describe('Ravencoin Service', function() {
 
   describe('#_getDefaultConf', function() {
     afterEach(function() {
-      ravencore.Networks.disableRegtest();
-      baseConfig.node.network = ravencore.Networks.testnet;
+      myntcore.Networks.disableRegtest();
+      baseConfig.node.network = myntcore.Networks.testnet;
     });
     it('will get default rpc port for livenet', function() {
       var config = {
         node: {
-          network: ravencore.Networks.livenet
+          network: myntcore.Networks.livenet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var ravend = new RavencoinService(config);
-      ravend._getDefaultConf().rpcport.should.equal(8766);
+      var myntd = new MyntService(config);
+      myntd._getDefaultConf().rpcport.should.equal(8766);
     });
     it('will get default rpc port for testnet', function() {
       var config = {
         node: {
-          network: ravencore.Networks.testnet
+          network: myntcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var ravend = new RavencoinService(config);
-      ravend._getDefaultConf().rpcport.should.equal(18766);
+      var myntd = new MyntService(config);
+      myntd._getDefaultConf().rpcport.should.equal(18766);
     });
     it('will get default rpc port for regtest', function() {
-      ravencore.Networks.enableRegtest();
+      myntcore.Networks.enableRegtest();
       var config = {
         node: {
-          network: ravencore.Networks.testnet
+          network: myntcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var ravend = new RavencoinService(config);
-      ravend._getDefaultConf().rpcport.should.equal(18766);
+      var myntd = new MyntService(config);
+      myntd._getDefaultConf().rpcport.should.equal(18766);
     });
   });
 
   describe('#_getNetworkConfigPath', function() {
     afterEach(function() {
-      ravencore.Networks.disableRegtest();
-      baseConfig.node.network = ravencore.Networks.testnet;
+      myntcore.Networks.disableRegtest();
+      baseConfig.node.network = myntcore.Networks.testnet;
     });
     it('will get default config path for livenet', function() {
       var config = {
         node: {
-          network: ravencore.Networks.livenet
+          network: myntcore.Networks.livenet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var ravend = new RavencoinService(config);
-      should.equal(ravend._getNetworkConfigPath(), undefined);
+      var myntd = new MyntService(config);
+      should.equal(myntd._getNetworkConfigPath(), undefined);
     });
     it('will get default rpc port for testnet', function() {
       var config = {
         node: {
-          network: ravencore.Networks.testnet
+          network: myntcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var ravend = new RavencoinService(config);
-      ravend._getNetworkConfigPath().should.equal('testnet3/raven.conf');
+      var myntd = new MyntService(config);
+      myntd._getNetworkConfigPath().should.equal('testnet3/mynt.conf');
     });
     it('will get default rpc port for regtest', function() {
-      ravencore.Networks.enableRegtest();
+      myntcore.Networks.enableRegtest();
       var config = {
         node: {
-          network: ravencore.Networks.testnet
+          network: myntcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var ravend = new RavencoinService(config);
-      ravend._getNetworkConfigPath().should.equal('regtest/raven.conf');
+      var myntd = new MyntService(config);
+      myntd._getNetworkConfigPath().should.equal('regtest/mynt.conf');
     });
   });
 
   describe('#_getNetworkOption', function() {
     afterEach(function() {
-      ravencore.Networks.disableRegtest();
-      baseConfig.node.network = ravencore.Networks.testnet;
+      myntcore.Networks.disableRegtest();
+      baseConfig.node.network = myntcore.Networks.testnet;
     });
     it('return --testnet for testnet', function() {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.node.network = ravencore.Networks.testnet;
-      ravend._getNetworkOption().should.equal('--testnet');
+      var myntd = new MyntService(baseConfig);
+      myntd.node.network = myntcore.Networks.testnet;
+      myntd._getNetworkOption().should.equal('--testnet');
     });
     it('return --regtest for testnet', function() {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.node.network = ravencore.Networks.testnet;
-      ravencore.Networks.enableRegtest();
-      ravend._getNetworkOption().should.equal('--regtest');
+      var myntd = new MyntService(baseConfig);
+      myntd.node.network = myntcore.Networks.testnet;
+      myntcore.Networks.enableRegtest();
+      myntd._getNetworkOption().should.equal('--regtest');
     });
     it('return undefined for livenet', function() {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.node.network = ravencore.Networks.livenet;
-      ravencore.Networks.enableRegtest();
-      should.equal(ravend._getNetworkOption(), undefined);
+      var myntd = new MyntService(baseConfig);
+      myntd.node.network = myntcore.Networks.livenet;
+      myntcore.Networks.enableRegtest();
+      should.equal(myntd._getNetworkOption(), undefined);
     });
   });
 
   describe('#_zmqBlockHandler', function() {
     it('will emit block', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var node = {};
       var message = new Buffer('00000000002e08fc7ae9a9aa5380e95e2adcdc5752a4a66a7d3a22466bd4e6aa', 'hex');
-      ravend._rapidProtectedUpdateTip = sinon.stub();
-      ravend.on('block', function(block) {
+      myntd._rapidProtectedUpdateTip = sinon.stub();
+      myntd.on('block', function(block) {
         block.should.equal(message);
         done();
       });
-      ravend._zmqBlockHandler(node, message);
+      myntd._zmqBlockHandler(node, message);
     });
     it('will not emit same block twice', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var node = {};
       var message = new Buffer('00000000002e08fc7ae9a9aa5380e95e2adcdc5752a4a66a7d3a22466bd4e6aa', 'hex');
-      ravend._rapidProtectedUpdateTip = sinon.stub();
-      ravend.on('block', function(block) {
+      myntd._rapidProtectedUpdateTip = sinon.stub();
+      myntd.on('block', function(block) {
         block.should.equal(message);
         done();
       });
-      ravend._zmqBlockHandler(node, message);
-      ravend._zmqBlockHandler(node, message);
+      myntd._zmqBlockHandler(node, message);
+      myntd._zmqBlockHandler(node, message);
     });
     it('will call function to update tip', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var node = {};
       var message = new Buffer('00000000002e08fc7ae9a9aa5380e95e2adcdc5752a4a66a7d3a22466bd4e6aa', 'hex');
-      ravend._rapidProtectedUpdateTip = sinon.stub();
-      ravend._zmqBlockHandler(node, message);
-      ravend._rapidProtectedUpdateTip.callCount.should.equal(1);
-      ravend._rapidProtectedUpdateTip.args[0][0].should.equal(node);
-      ravend._rapidProtectedUpdateTip.args[0][1].should.equal(message);
+      myntd._rapidProtectedUpdateTip = sinon.stub();
+      myntd._zmqBlockHandler(node, message);
+      myntd._rapidProtectedUpdateTip.callCount.should.equal(1);
+      myntd._rapidProtectedUpdateTip.args[0][0].should.equal(node);
+      myntd._rapidProtectedUpdateTip.args[0][1].should.equal(message);
     });
     it('will emit to subscribers', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var node = {};
       var message = new Buffer('00000000002e08fc7ae9a9aa5380e95e2adcdc5752a4a66a7d3a22466bd4e6aa', 'hex');
-      ravend._rapidProtectedUpdateTip = sinon.stub();
+      myntd._rapidProtectedUpdateTip = sinon.stub();
       var emitter = new EventEmitter();
-      ravend.subscriptions.hashblock.push(emitter);
-      emitter.on('ravend/hashblock', function(blockHash) {
+      myntd.subscriptions.hashblock.push(emitter);
+      emitter.on('myntd/hashblock', function(blockHash) {
         blockHash.should.equal(message.toString('hex'));
         done();
       });
-      ravend._zmqBlockHandler(node, message);
+      myntd._zmqBlockHandler(node, message);
     });
   });
 
   describe('#_rapidProtectedUpdateTip', function() {
     it('will limit tip updates with rapid calls', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var callCount = 0;
-      ravend._updateTip = function() {
+      myntd._updateTip = function() {
         callCount++;
         callCount.should.be.within(1, 2);
         if (callCount > 1) {
@@ -935,7 +935,7 @@ describe('Ravencoin Service', function() {
       var message = new Buffer('00000000002e08fc7ae9a9aa5380e95e2adcdc5752a4a66a7d3a22466bd4e6aa', 'hex');
       var count = 0;
       function repeat() {
-        ravend._rapidProtectedUpdateTip(node, message);
+        myntd._rapidProtectedUpdateTip(node, message);
         count++;
         if (count < 50) {
           repeat();
@@ -956,9 +956,9 @@ describe('Ravencoin Service', function() {
       sandbox.restore();
     });
     it('log and emit rpc error from get block', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.syncPercentage = sinon.stub();
-      ravend.on('error', function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd.syncPercentage = sinon.stub();
+      myntd.on('error', function(err) {
         err.code.should.equal(-1);
         err.message.should.equal('Test error');
         log.error.callCount.should.equal(1);
@@ -969,12 +969,12 @@ describe('Ravencoin Service', function() {
           getBlock: sinon.stub().callsArgWith(1, {message: 'Test error', code: -1})
         }
       };
-      ravend._updateTip(node, message);
+      myntd._updateTip(node, message);
     });
     it('emit synced if percentage is 100', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.syncPercentage = sinon.stub().callsArgWith(0, null, 100);
-      ravend.on('synced', function() {
+      var myntd = new MyntService(baseConfig);
+      myntd.syncPercentage = sinon.stub().callsArgWith(0, null, 100);
+      myntd.on('synced', function() {
         done();
       });
       var node = {
@@ -982,12 +982,12 @@ describe('Ravencoin Service', function() {
           getBlock: sinon.stub()
         }
       };
-      ravend._updateTip(node, message);
+      myntd._updateTip(node, message);
     });
     it('NOT emit synced if percentage is less than 100', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.syncPercentage = sinon.stub().callsArgWith(0, null, 99);
-      ravend.on('synced', function() {
+      var myntd = new MyntService(baseConfig);
+      myntd.syncPercentage = sinon.stub().callsArgWith(0, null, 99);
+      myntd.on('synced', function() {
         throw new Error('Synced called');
       });
       var node = {
@@ -995,14 +995,14 @@ describe('Ravencoin Service', function() {
           getBlock: sinon.stub()
         }
       };
-      ravend._updateTip(node, message);
+      myntd._updateTip(node, message);
       log.info.callCount.should.equal(1);
       done();
     });
     it('log and emit error from syncPercentage', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.syncPercentage = sinon.stub().callsArgWith(0, new Error('test'));
-      ravend.on('error', function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd.syncPercentage = sinon.stub().callsArgWith(0, new Error('test'));
+      myntd.on('error', function(err) {
         log.error.callCount.should.equal(1);
         err.message.should.equal('test');
         done();
@@ -1012,16 +1012,16 @@ describe('Ravencoin Service', function() {
           getBlock: sinon.stub()
         }
       };
-      ravend._updateTip(node, message);
+      myntd._updateTip(node, message);
     });
     it('reset caches and set height', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.syncPercentage = sinon.stub();
-      ravend._resetCaches = sinon.stub();
-      ravend.on('tip', function(height) {
-        ravend._resetCaches.callCount.should.equal(1);
+      var myntd = new MyntService(baseConfig);
+      myntd.syncPercentage = sinon.stub();
+      myntd._resetCaches = sinon.stub();
+      myntd.on('tip', function(height) {
+        myntd._resetCaches.callCount.should.equal(1);
         height.should.equal(10);
-        ravend.height.should.equal(10);
+        myntd.height.should.equal(10);
         done();
       });
       var node = {
@@ -1033,13 +1033,13 @@ describe('Ravencoin Service', function() {
           })
         }
       };
-      ravend._updateTip(node, message);
+      myntd._updateTip(node, message);
     });
     it('will NOT update twice for the same hash', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.syncPercentage = sinon.stub();
-      ravend._resetCaches = sinon.stub();
-      ravend.on('tip', function() {
+      var myntd = new MyntService(baseConfig);
+      myntd.syncPercentage = sinon.stub();
+      myntd._resetCaches = sinon.stub();
+      myntd.on('tip', function() {
         done();
       });
       var node = {
@@ -1051,23 +1051,23 @@ describe('Ravencoin Service', function() {
           })
         }
       };
-      ravend._updateTip(node, message);
-      ravend._updateTip(node, message);
+      myntd._updateTip(node, message);
+      myntd._updateTip(node, message);
     });
     it('will not call syncPercentage if node is stopping', function(done) {
       var config = {
         node: {
-          network: ravencore.Networks.testnet
+          network: myntcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var ravend = new RavencoinService(config);
-      ravend.syncPercentage = sinon.stub();
-      ravend._resetCaches = sinon.stub();
-      ravend.node.stopping = true;
+      var myntd = new MyntService(config);
+      myntd.syncPercentage = sinon.stub();
+      myntd._resetCaches = sinon.stub();
+      myntd.node.stopping = true;
       var node = {
         client: {
           getBlock: sinon.stub().callsArgWith(1, null, {
@@ -1077,159 +1077,159 @@ describe('Ravencoin Service', function() {
           })
         }
       };
-      ravend.on('tip', function() {
-        ravend.syncPercentage.callCount.should.equal(0);
+      myntd.on('tip', function() {
+        myntd.syncPercentage.callCount.should.equal(0);
         done();
       });
-      ravend._updateTip(node, message);
+      myntd._updateTip(node, message);
     });
   });
 
   describe('#_getAddressesFromTransaction', function() {
-    it('will get results using ravencore.Transaction', function() {
-      var ravend = new RavencoinService(baseConfig);
+    it('will get results using myntcore.Transaction', function() {
+      var myntd = new MyntService(baseConfig);
       var wif = 'L2Gkw3kKJ6N24QcDuH4XDqt9cTqsKTVNDGz1CRZhk9cq4auDUbJy';
-      var privkey = ravencore.PrivateKey.fromWIF(wif);
-      var inputAddress = privkey.toAddress(ravencore.Networks.testnet);
-      var outputAddress = ravencore.Address('2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br');
-      var tx = ravencore.Transaction();
+      var privkey = myntcore.PrivateKey.fromWIF(wif);
+      var inputAddress = privkey.toAddress(myntcore.Networks.testnet);
+      var outputAddress = myntcore.Address('2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br');
+      var tx = myntcore.Transaction();
       tx.from({
         txid: '4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b',
         outputIndex: 0,
-        script: ravencore.Script(inputAddress),
+        script: myntcore.Script(inputAddress),
         address: inputAddress.toString(),
         satoshis: 5000000000
       });
       tx.to(outputAddress, 5000000000);
       tx.sign(privkey);
-      var addresses = ravend._getAddressesFromTransaction(tx);
+      var addresses = myntd._getAddressesFromTransaction(tx);
       addresses.length.should.equal(2);
       addresses[0].should.equal(inputAddress.toString());
       addresses[1].should.equal(outputAddress.toString());
     });
     it('will handle non-standard script types', function() {
-      var ravend = new RavencoinService(baseConfig);
-      var tx = ravencore.Transaction();
-      tx.addInput(ravencore.Transaction.Input({
+      var myntd = new MyntService(baseConfig);
+      var tx = myntcore.Transaction();
+      tx.addInput(myntcore.Transaction.Input({
         prevTxId: '4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b',
-        script: ravencore.Script('OP_TRUE'),
+        script: myntcore.Script('OP_TRUE'),
         outputIndex: 1,
         output: {
-          script: ravencore.Script('OP_TRUE'),
+          script: myntcore.Script('OP_TRUE'),
           satoshis: 5000000000
         }
       }));
-      tx.addOutput(ravencore.Transaction.Output({
-        script: ravencore.Script('OP_TRUE'),
+      tx.addOutput(myntcore.Transaction.Output({
+        script: myntcore.Script('OP_TRUE'),
         satoshis: 5000000000
       }));
-      var addresses = ravend._getAddressesFromTransaction(tx);
+      var addresses = myntd._getAddressesFromTransaction(tx);
       addresses.length.should.equal(0);
     });
     it('will handle unparsable script types or missing input script', function() {
-      var ravend = new RavencoinService(baseConfig);
-      var tx = ravencore.Transaction();
-      tx.addOutput(ravencore.Transaction.Output({
+      var myntd = new MyntService(baseConfig);
+      var tx = myntcore.Transaction();
+      tx.addOutput(myntcore.Transaction.Output({
         script: new Buffer('4c', 'hex'),
         satoshis: 5000000000
       }));
-      var addresses = ravend._getAddressesFromTransaction(tx);
+      var addresses = myntd._getAddressesFromTransaction(tx);
       addresses.length.should.equal(0);
     });
     it('will return unique values', function() {
-      var ravend = new RavencoinService(baseConfig);
-      var tx = ravencore.Transaction();
-      var address = ravencore.Address('2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br');
-      tx.addOutput(ravencore.Transaction.Output({
-        script: ravencore.Script(address),
+      var myntd = new MyntService(baseConfig);
+      var tx = myntcore.Transaction();
+      var address = myntcore.Address('2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br');
+      tx.addOutput(myntcore.Transaction.Output({
+        script: myntcore.Script(address),
         satoshis: 5000000000
       }));
-      tx.addOutput(ravencore.Transaction.Output({
-        script: ravencore.Script(address),
+      tx.addOutput(myntcore.Transaction.Output({
+        script: myntcore.Script(address),
         satoshis: 5000000000
       }));
-      var addresses = ravend._getAddressesFromTransaction(tx);
+      var addresses = myntd._getAddressesFromTransaction(tx);
       addresses.length.should.equal(1);
     });
   });
 
   describe('#_notifyAddressTxidSubscribers', function() {
     it('will emit event if matching addresses', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var address = 'RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN';
-      ravend._getAddressesFromTransaction = sinon.stub().returns([address]);
+      myntd._getAddressesFromTransaction = sinon.stub().returns([address]);
       var emitter = new EventEmitter();
-      ravend.subscriptions.address[address] = [emitter];
+      myntd.subscriptions.address[address] = [emitter];
       var txid = '46f24e0c274fc07708b781963576c4c5d5625d926dbb0a17fa865dcd9fe58ea0';
       var transaction = {};
-      emitter.on('ravend/addresstxid', function(data) {
+      emitter.on('myntd/addresstxid', function(data) {
         data.address.should.equal(address);
         data.txid.should.equal(txid);
         done();
       });
       sinon.spy(emitter, 'emit');
-      ravend._notifyAddressTxidSubscribers(txid, transaction);
+      myntd._notifyAddressTxidSubscribers(txid, transaction);
       emitter.emit.callCount.should.equal(1);
     });
     it('will NOT emit event without matching addresses', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var address = 'RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN';
-      ravend._getAddressesFromTransaction = sinon.stub().returns([address]);
+      myntd._getAddressesFromTransaction = sinon.stub().returns([address]);
       var emitter = new EventEmitter();
       var txid = '46f24e0c274fc07708b781963576c4c5d5625d926dbb0a17fa865dcd9fe58ea0';
       var transaction = {};
       emitter.emit = sinon.stub();
-      ravend._notifyAddressTxidSubscribers(txid, transaction);
+      myntd._notifyAddressTxidSubscribers(txid, transaction);
       emitter.emit.callCount.should.equal(0);
     });
   });
 
   describe('#_zmqTransactionHandler', function() {
     it('will emit to subscribers', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var expectedBuffer = new Buffer(txhex, 'hex');
       var emitter = new EventEmitter();
-      ravend.subscriptions.rawtransaction.push(emitter);
-      emitter.on('ravend/rawtransaction', function(hex) {
+      myntd.subscriptions.rawtransaction.push(emitter);
+      emitter.on('myntd/rawtransaction', function(hex) {
         hex.should.be.a('string');
         hex.should.equal(expectedBuffer.toString('hex'));
         done();
       });
       var node = {};
-      ravend._zmqTransactionHandler(node, expectedBuffer);
+      myntd._zmqTransactionHandler(node, expectedBuffer);
     });
     it('will NOT emit to subscribers more than once for the same tx', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var expectedBuffer = new Buffer(txhex, 'hex');
       var emitter = new EventEmitter();
-      ravend.subscriptions.rawtransaction.push(emitter);
-      emitter.on('ravend/rawtransaction', function() {
+      myntd.subscriptions.rawtransaction.push(emitter);
+      emitter.on('myntd/rawtransaction', function() {
         done();
       });
       var node = {};
-      ravend._zmqTransactionHandler(node, expectedBuffer);
-      ravend._zmqTransactionHandler(node, expectedBuffer);
+      myntd._zmqTransactionHandler(node, expectedBuffer);
+      myntd._zmqTransactionHandler(node, expectedBuffer);
     });
     it('will emit "tx" event', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var expectedBuffer = new Buffer(txhex, 'hex');
-      ravend.on('tx', function(buffer) {
+      myntd.on('tx', function(buffer) {
         buffer.should.be.instanceof(Buffer);
         buffer.toString('hex').should.equal(expectedBuffer.toString('hex'));
         done();
       });
       var node = {};
-      ravend._zmqTransactionHandler(node, expectedBuffer);
+      myntd._zmqTransactionHandler(node, expectedBuffer);
     });
     it('will NOT emit "tx" event more than once for the same tx', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var expectedBuffer = new Buffer(txhex, 'hex');
-      ravend.on('tx', function() {
+      myntd.on('tx', function() {
         done();
       });
       var node = {};
-      ravend._zmqTransactionHandler(node, expectedBuffer);
-      ravend._zmqTransactionHandler(node, expectedBuffer);
+      myntd._zmqTransactionHandler(node, expectedBuffer);
+      myntd._zmqTransactionHandler(node, expectedBuffer);
     });
   });
 
@@ -1242,11 +1242,11 @@ describe('Ravencoin Service', function() {
       sandbox.restore();
     });
     it('log errors, update tip and subscribe to zmq events', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._updateTip = sinon.stub();
-      ravend._subscribeZmqEvents = sinon.stub();
+      var myntd = new MyntService(baseConfig);
+      myntd._updateTip = sinon.stub();
+      myntd._subscribeZmqEvents = sinon.stub();
       var blockEvents = 0;
-      ravend.on('block', function() {
+      myntd.on('block', function() {
         blockEvents++;
       });
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {
@@ -1277,26 +1277,26 @@ describe('Ravencoin Service', function() {
           getBlockchainInfo: getBlockchainInfo
         }
       };
-      ravend._checkSyncedAndSubscribeZmqEvents(node);
+      myntd._checkSyncedAndSubscribeZmqEvents(node);
       setTimeout(function() {
         log.error.callCount.should.equal(2);
         blockEvents.should.equal(11);
-        ravend._updateTip.callCount.should.equal(11);
-        ravend._subscribeZmqEvents.callCount.should.equal(1);
+        myntd._updateTip.callCount.should.equal(11);
+        myntd._subscribeZmqEvents.callCount.should.equal(1);
         done();
       }, 200);
     });
     it('it will clear interval if node is stopping', function(done) {
       var config = {
         node: {
-          network: ravencore.Networks.testnet
+          network: myntcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var ravend = new RavencoinService(config);
+      var myntd = new MyntService(config);
       var getBestBlockHash = sinon.stub().callsArgWith(0, {code: -1, message: 'error'});
       var node = {
         _tipUpdateInterval: 1,
@@ -1304,9 +1304,9 @@ describe('Ravencoin Service', function() {
           getBestBlockHash: getBestBlockHash
         }
       };
-      ravend._checkSyncedAndSubscribeZmqEvents(node);
+      myntd._checkSyncedAndSubscribeZmqEvents(node);
       setTimeout(function() {
-        ravend.node.stopping = true;
+        myntd.node.stopping = true;
         var count = getBestBlockHash.callCount;
         setTimeout(function() {
           getBestBlockHash.callCount.should.equal(count);
@@ -1315,9 +1315,9 @@ describe('Ravencoin Service', function() {
       }, 100);
     });
     it('will not set interval if synced is true', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._updateTip = sinon.stub();
-      ravend._subscribeZmqEvents = sinon.stub();
+      var myntd = new MyntService(baseConfig);
+      myntd._updateTip = sinon.stub();
+      myntd._subscribeZmqEvents = sinon.stub();
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {
         result: '00000000000000001bb82a7f5973618cfd3185ba1ded04dd852a653f92a27c45'
       });
@@ -1334,7 +1334,7 @@ describe('Ravencoin Service', function() {
           getBlockchainInfo: getBlockchainInfo
         }
       };
-      ravend._checkSyncedAndSubscribeZmqEvents(node);
+      myntd._checkSyncedAndSubscribeZmqEvents(node);
       setTimeout(function() {
         getBestBlockHash.callCount.should.equal(1);
         getBlockchainInfo.callCount.should.equal(1);
@@ -1345,28 +1345,28 @@ describe('Ravencoin Service', function() {
 
   describe('#_subscribeZmqEvents', function() {
     it('will call subscribe on zmq socket', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var node = {
         zmqSubSocket: {
           subscribe: sinon.stub(),
           on: sinon.stub()
         }
       };
-      ravend._subscribeZmqEvents(node);
+      myntd._subscribeZmqEvents(node);
       node.zmqSubSocket.subscribe.callCount.should.equal(2);
       node.zmqSubSocket.subscribe.args[0][0].should.equal('hashblock');
       node.zmqSubSocket.subscribe.args[1][0].should.equal('rawtx');
     });
     it('will call relevant handler for rawtx topics', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._zmqTransactionHandler = sinon.stub();
+      var myntd = new MyntService(baseConfig);
+      myntd._zmqTransactionHandler = sinon.stub();
       var node = {
         zmqSubSocket: new EventEmitter()
       };
       node.zmqSubSocket.subscribe = sinon.stub();
-      ravend._subscribeZmqEvents(node);
+      myntd._subscribeZmqEvents(node);
       node.zmqSubSocket.on('message', function() {
-        ravend._zmqTransactionHandler.callCount.should.equal(1);
+        myntd._zmqTransactionHandler.callCount.should.equal(1);
         done();
       });
       var topic = new Buffer('rawtx', 'utf8');
@@ -1374,15 +1374,15 @@ describe('Ravencoin Service', function() {
       node.zmqSubSocket.emit('message', topic, message);
     });
     it('will call relevant handler for hashblock topics', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._zmqBlockHandler = sinon.stub();
+      var myntd = new MyntService(baseConfig);
+      myntd._zmqBlockHandler = sinon.stub();
       var node = {
         zmqSubSocket: new EventEmitter()
       };
       node.zmqSubSocket.subscribe = sinon.stub();
-      ravend._subscribeZmqEvents(node);
+      myntd._subscribeZmqEvents(node);
       node.zmqSubSocket.on('message', function() {
-        ravend._zmqBlockHandler.callCount.should.equal(1);
+        myntd._zmqBlockHandler.callCount.should.equal(1);
         done();
       });
       var topic = new Buffer('hashblock', 'utf8');
@@ -1390,17 +1390,17 @@ describe('Ravencoin Service', function() {
       node.zmqSubSocket.emit('message', topic, message);
     });
     it('will ignore unknown topic types', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._zmqBlockHandler = sinon.stub();
-      ravend._zmqTransactionHandler = sinon.stub();
+      var myntd = new MyntService(baseConfig);
+      myntd._zmqBlockHandler = sinon.stub();
+      myntd._zmqTransactionHandler = sinon.stub();
       var node = {
         zmqSubSocket: new EventEmitter()
       };
       node.zmqSubSocket.subscribe = sinon.stub();
-      ravend._subscribeZmqEvents(node);
+      myntd._subscribeZmqEvents(node);
       node.zmqSubSocket.on('message', function() {
-        ravend._zmqBlockHandler.callCount.should.equal(0);
-        ravend._zmqTransactionHandler.callCount.should.equal(0);
+        myntd._zmqBlockHandler.callCount.should.equal(0);
+        myntd._zmqTransactionHandler.callCount.should.equal(0);
         done();
       });
       var topic = new Buffer('unknown', 'utf8');
@@ -1417,14 +1417,14 @@ describe('Ravencoin Service', function() {
       var socketFunc = function() {
         return socket;
       };
-      var RavencoinService = proxyquire('../../lib/services/ravend', {
+      var MyntService = proxyquire('../../lib/services/myntd', {
         'zeromq': {
           socket: socketFunc
         }
       });
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var node = {};
-      ravend._initZmqSubSocket(node, 'url');
+      myntd._initZmqSubSocket(node, 'url');
       node.zmqSubSocket.should.equal(socket);
       socket.connect.callCount.should.equal(1);
       socket.connect.args[0][0].should.equal('url');
@@ -1443,7 +1443,7 @@ describe('Ravencoin Service', function() {
       sandbox.restore();
     });
     it('give error from client getblockchaininfo', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var node = {
         _reindex: true,
         _reindexWait: 1,
@@ -1451,14 +1451,14 @@ describe('Ravencoin Service', function() {
           getBlockchainInfo: sinon.stub().callsArgWith(0, {code: -1 , message: 'Test error'})
         }
       };
-      ravend._checkReindex(node, function(err) {
+      myntd._checkReindex(node, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
         done();
       });
     });
     it('will wait until sync is 100 percent', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var percent = 0.89;
       var node = {
         _reindex: true,
@@ -1474,18 +1474,18 @@ describe('Ravencoin Service', function() {
           }
         }
       };
-      ravend._checkReindex(node, function() {
+      myntd._checkReindex(node, function() {
         node._reindex.should.equal(false);
         log.info.callCount.should.equal(11);
         done();
       });
     });
     it('will call callback if reindex is not enabled', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var node = {
         _reindex: false
       };
-      ravend._checkReindex(node, function() {
+      myntd._checkReindex(node, function() {
         node._reindex.should.equal(false);
         done();
       });
@@ -1501,21 +1501,21 @@ describe('Ravencoin Service', function() {
       sandbox.restore();
     });
     it('will give rpc from client getbestblockhash', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, {code: -1, message: 'Test error'});
       var node = {
         client: {
           getBestBlockHash: getBestBlockHash
         }
       };
-      ravend._loadTipFromNode(node, function(err) {
+      myntd._loadTipFromNode(node, function(err) {
         err.should.be.instanceof(Error);
         log.warn.callCount.should.equal(0);
         done();
       });
     });
     it('will give rpc from client getblock', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {
         result: '00000000000000001bb82a7f5973618cfd3185ba1ded04dd852a653f92a27c45'
       });
@@ -1526,7 +1526,7 @@ describe('Ravencoin Service', function() {
           getBlock: getBlock
         }
       };
-      ravend._loadTipFromNode(node, function(err) {
+      myntd._loadTipFromNode(node, function(err) {
         getBlock.args[0][0].should.equal('00000000000000001bb82a7f5973618cfd3185ba1ded04dd852a653f92a27c45');
         err.should.be.instanceof(Error);
         log.warn.callCount.should.equal(0);
@@ -1534,21 +1534,21 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will log when error is RPC_IN_WARMUP', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, {code: -28, message: 'Verifying blocks...'});
       var node = {
         client: {
           getBestBlockHash: getBestBlockHash
         }
       };
-      ravend._loadTipFromNode(node, function(err) {
+      myntd._loadTipFromNode(node, function(err) {
         err.should.be.instanceof(Error);
         log.warn.callCount.should.equal(1);
         done();
       });
     });
     it('will set height and emit tip', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {
         result: '00000000000000001bb82a7f5973618cfd3185ba1ded04dd852a653f92a27c45'
       });
@@ -1563,12 +1563,12 @@ describe('Ravencoin Service', function() {
           getBlock: getBlock
         }
       };
-      ravend.on('tip', function(height) {
+      myntd.on('tip', function(height) {
         height.should.equal(100);
-        ravend.height.should.equal(100);
+        myntd.height.should.equal(100);
         done();
       });
-      ravend._loadTipFromNode(node, function(err) {
+      myntd._loadTipFromNode(node, function(err) {
         if (err) {
           return done(err);
         }
@@ -1590,20 +1590,20 @@ describe('Ravencoin Service', function() {
       var error = new Error('Test error');
       error.code = 'ENOENT';
       readFile.onCall(1).callsArgWith(2, error);
-      var TestRavencoinService = proxyquire('../../lib/services/ravend', {
+      var TestMyntService = proxyquire('../../lib/services/myntd', {
         fs: {
           readFile: readFile
         }
       });
-      var ravend = new TestRavencoinService(baseConfig);
-      ravend.spawnStopTime = 1;
-      ravend._process = {};
-      ravend._process.kill = sinon.stub();
-      ravend._stopSpawnedRavencoin(function(err) {
+      var myntd = new TestMyntService(baseConfig);
+      myntd.spawnStopTime = 1;
+      myntd._process = {};
+      myntd._process.kill = sinon.stub();
+      myntd._stopSpawnedMynt(function(err) {
         if (err) {
           return done(err);
         }
-        ravend._process.kill.callCount.should.equal(1);
+        myntd._process.kill.callCount.should.equal(1);
         log.warn.callCount.should.equal(1);
         done();
       });
@@ -1614,22 +1614,22 @@ describe('Ravencoin Service', function() {
       var error = new Error('Test error');
       error.code = 'ENOENT';
       readFile.onCall(1).callsArgWith(2, error);
-      var TestRavencoinService = proxyquire('../../lib/services/ravend', {
+      var TestMyntService = proxyquire('../../lib/services/myntd', {
         fs: {
           readFile: readFile
         }
       });
-      var ravend = new TestRavencoinService(baseConfig);
-      ravend.spawnStopTime = 1;
-      ravend._process = {};
+      var myntd = new TestMyntService(baseConfig);
+      myntd.spawnStopTime = 1;
+      myntd._process = {};
       var error2 = new Error('Test error');
       error2.code = 'ESRCH';
-      ravend._process.kill = sinon.stub().throws(error2);
-      ravend._stopSpawnedRavencoin(function(err) {
+      myntd._process.kill = sinon.stub().throws(error2);
+      myntd._stopSpawnedMynt(function(err) {
         if (err) {
           return done(err);
         }
-        ravend._process.kill.callCount.should.equal(1);
+        myntd._process.kill.callCount.should.equal(1);
         log.warn.callCount.should.equal(2);
         done();
       });
@@ -1637,16 +1637,16 @@ describe('Ravencoin Service', function() {
     it('it will attempt to kill process with NaN', function(done) {
       var readFile = sandbox.stub();
       readFile.onCall(0).callsArgWith(2, null, '     ');
-      var TestRavencoinService = proxyquire('../../lib/services/ravend', {
+      var TestMyntService = proxyquire('../../lib/services/myntd', {
         fs: {
           readFile: readFile
         }
       });
-      var ravend = new TestRavencoinService(baseConfig);
-      ravend.spawnStopTime = 1;
-      ravend._process = {};
-      ravend._process.kill = sinon.stub();
-      ravend._stopSpawnedRavencoin(function(err) {
+      var myntd = new TestMyntService(baseConfig);
+      myntd.spawnStopTime = 1;
+      myntd._process = {};
+      myntd._process.kill = sinon.stub();
+      myntd._stopSpawnedMynt(function(err) {
         if (err) {
           return done(err);
         }
@@ -1656,16 +1656,16 @@ describe('Ravencoin Service', function() {
     it('it will attempt to kill process without pid', function(done) {
       var readFile = sandbox.stub();
       readFile.onCall(0).callsArgWith(2, null, '');
-      var TestRavencoinService = proxyquire('../../lib/services/ravend', {
+      var TestMyntService = proxyquire('../../lib/services/myntd', {
         fs: {
           readFile: readFile
         }
       });
-      var ravend = new TestRavencoinService(baseConfig);
-      ravend.spawnStopTime = 1;
-      ravend._process = {};
-      ravend._process.kill = sinon.stub();
-      ravend._stopSpawnedRavencoin(function(err) {
+      var myntd = new TestMyntService(baseConfig);
+      myntd.spawnStopTime = 1;
+      myntd._process = {};
+      myntd._process.kill = sinon.stub();
+      myntd._stopSpawnedMynt(function(err) {
         if (err) {
           return done(err);
         }
@@ -1685,20 +1685,20 @@ describe('Ravencoin Service', function() {
       sandbox.restore();
     });
     it('will give error from spawn config', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._loadSpawnConfiguration = sinon.stub();
-      ravend._loadSpawnConfiguration = sinon.stub().throws(new Error('test'));
-      ravend._spawnChildProcess(function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd._loadSpawnConfiguration = sinon.stub();
+      myntd._loadSpawnConfiguration = sinon.stub().throws(new Error('test'));
+      myntd._spawnChildProcess(function(err) {
         err.should.be.instanceof(Error);
         err.message.should.equal('test');
         done();
       });
     });
-    it('will give error from stopSpawnedRavencoin', function() {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._loadSpawnConfiguration = sinon.stub();
-      ravend._stopSpawnedRavencoin = sinon.stub().callsArgWith(0, new Error('test'));
-      ravend._spawnChildProcess(function(err) {
+    it('will give error from stopSpawnedMynt', function() {
+      var myntd = new MyntService(baseConfig);
+      myntd._loadSpawnConfiguration = sinon.stub();
+      myntd._stopSpawnedMynt = sinon.stub().callsArgWith(0, new Error('test'));
+      myntd._spawnChildProcess(function(err) {
         err.should.be.instanceOf(Error);
         err.message.should.equal('test');
       });
@@ -1706,7 +1706,7 @@ describe('Ravencoin Service', function() {
     it('will exit spawn if shutdown', function() {
       var config = {
         node: {
-          network: ravencore.Networks.testnet
+          network: myntcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
@@ -1715,7 +1715,7 @@ describe('Ravencoin Service', function() {
       };
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestRavencoinService = proxyquire('../../lib/services/ravend', {
+      var TestMyntService = proxyquire('../../lib/services/myntd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1723,12 +1723,12 @@ describe('Ravencoin Service', function() {
           spawn: spawn
         }
       });
-      var ravend = new TestRavencoinService(config);
-      ravend.spawn = {};
-      ravend._loadSpawnConfiguration = sinon.stub();
-      ravend._stopSpawnedRavencoin = sinon.stub().callsArgWith(0, null);
-      ravend.node.stopping = true;
-      ravend._spawnChildProcess(function(err) {
+      var myntd = new TestMyntService(config);
+      myntd.spawn = {};
+      myntd._loadSpawnConfiguration = sinon.stub();
+      myntd._stopSpawnedMynt = sinon.stub().callsArgWith(0, null);
+      myntd.node.stopping = true;
+      myntd._spawnChildProcess(function(err) {
         err.should.be.instanceOf(Error);
         err.message.should.match(/Stopping while trying to spawn/);
       });
@@ -1736,7 +1736,7 @@ describe('Ravencoin Service', function() {
     it('will include network with spawn command and init zmq/rpc on node', function(done) {
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestRavencoinService = proxyquire('../../lib/services/ravend', {
+      var TestMyntService = proxyquire('../../lib/services/myntd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1744,50 +1744,50 @@ describe('Ravencoin Service', function() {
           spawn: spawn
         }
       });
-      var ravend = new TestRavencoinService(baseConfig);
+      var myntd = new TestMyntService(baseConfig);
 
-      ravend._loadSpawnConfiguration = sinon.stub();
-      ravend.spawn = {};
-      ravend.spawn.exec = 'testexec';
-      ravend.spawn.configPath = 'testdir/raven.conf';
-      ravend.spawn.datadir = 'testdir';
-      ravend.spawn.config = {};
-      ravend.spawn.config.rpcport = 20001;
-      ravend.spawn.config.rpcuser = 'ravencoin';
-      ravend.spawn.config.rpcpassword = 'password';
-      ravend.spawn.config.zmqpubrawtx = 'tcp://127.0.0.1:30001';
+      myntd._loadSpawnConfiguration = sinon.stub();
+      myntd.spawn = {};
+      myntd.spawn.exec = 'testexec';
+      myntd.spawn.configPath = 'testdir/mynt.conf';
+      myntd.spawn.datadir = 'testdir';
+      myntd.spawn.config = {};
+      myntd.spawn.config.rpcport = 20001;
+      myntd.spawn.config.rpcuser = 'mynt';
+      myntd.spawn.config.rpcpassword = 'password';
+      myntd.spawn.config.zmqpubrawtx = 'tcp://127.0.0.1:30001';
 
-      ravend._loadTipFromNode = sinon.stub().callsArgWith(1, null);
-      ravend._initZmqSubSocket = sinon.stub();
-      ravend._checkSyncedAndSubscribeZmqEvents = sinon.stub();
-      ravend._checkReindex = sinon.stub().callsArgWith(1, null);
-      ravend._spawnChildProcess(function(err, node) {
+      myntd._loadTipFromNode = sinon.stub().callsArgWith(1, null);
+      myntd._initZmqSubSocket = sinon.stub();
+      myntd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
+      myntd._checkReindex = sinon.stub().callsArgWith(1, null);
+      myntd._spawnChildProcess(function(err, node) {
         should.not.exist(err);
         spawn.callCount.should.equal(1);
         spawn.args[0][0].should.equal('testexec');
         spawn.args[0][1].should.deep.equal([
-          '--conf=testdir/raven.conf',
+          '--conf=testdir/mynt.conf',
           '--datadir=testdir',
           '--testnet'
         ]);
         spawn.args[0][2].should.deep.equal({
           stdio: 'inherit'
         });
-        ravend._loadTipFromNode.callCount.should.equal(1);
-        ravend._initZmqSubSocket.callCount.should.equal(1);
-        should.exist(ravend._initZmqSubSocket.args[0][0].client);
-        ravend._initZmqSubSocket.args[0][1].should.equal('tcp://127.0.0.1:30001');
-        ravend._checkSyncedAndSubscribeZmqEvents.callCount.should.equal(1);
-        should.exist(ravend._checkSyncedAndSubscribeZmqEvents.args[0][0].client);
+        myntd._loadTipFromNode.callCount.should.equal(1);
+        myntd._initZmqSubSocket.callCount.should.equal(1);
+        should.exist(myntd._initZmqSubSocket.args[0][0].client);
+        myntd._initZmqSubSocket.args[0][1].should.equal('tcp://127.0.0.1:30001');
+        myntd._checkSyncedAndSubscribeZmqEvents.callCount.should.equal(1);
+        should.exist(myntd._checkSyncedAndSubscribeZmqEvents.args[0][0].client);
         should.exist(node);
         should.exist(node.client);
         done();
       });
     });
-    it('will respawn ravend spawned process', function(done) {
+    it('will respawn myntd spawned process', function(done) {
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestRavencoinService = proxyquire('../../lib/services/ravend', {
+      var TestMyntService = proxyquire('../../lib/services/myntd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1795,27 +1795,27 @@ describe('Ravencoin Service', function() {
           spawn: spawn
         }
       });
-      var ravend = new TestRavencoinService(baseConfig);
-      ravend._loadSpawnConfiguration = sinon.stub();
-      ravend.spawn = {};
-      ravend.spawn.exec = 'ravend';
-      ravend.spawn.datadir = '/tmp/ravencoin';
-      ravend.spawn.configPath = '/tmp/ravencoin/raven.conf';
-      ravend.spawn.config = {};
-      ravend.spawnRestartTime = 1;
-      ravend._loadTipFromNode = sinon.stub().callsArg(1);
-      ravend._initZmqSubSocket = sinon.stub();
-      ravend._checkReindex = sinon.stub().callsArg(1);
-      ravend._checkSyncedAndSubscribeZmqEvents = sinon.stub();
-      ravend._stopSpawnedRavencoin = sinon.stub().callsArg(0);
-      sinon.spy(ravend, '_spawnChildProcess');
-      ravend._spawnChildProcess(function(err) {
+      var myntd = new TestMyntService(baseConfig);
+      myntd._loadSpawnConfiguration = sinon.stub();
+      myntd.spawn = {};
+      myntd.spawn.exec = 'myntd';
+      myntd.spawn.datadir = '/tmp/mynt';
+      myntd.spawn.configPath = '/tmp/mynt/mynt.conf';
+      myntd.spawn.config = {};
+      myntd.spawnRestartTime = 1;
+      myntd._loadTipFromNode = sinon.stub().callsArg(1);
+      myntd._initZmqSubSocket = sinon.stub();
+      myntd._checkReindex = sinon.stub().callsArg(1);
+      myntd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
+      myntd._stopSpawnedMynt = sinon.stub().callsArg(0);
+      sinon.spy(myntd, '_spawnChildProcess');
+      myntd._spawnChildProcess(function(err) {
         if (err) {
           return done(err);
         }
         process.once('exit', function() {
           setTimeout(function() {
-            ravend._spawnChildProcess.callCount.should.equal(2);
+            myntd._spawnChildProcess.callCount.should.equal(2);
             done();
           }, 5);
         });
@@ -1825,7 +1825,7 @@ describe('Ravencoin Service', function() {
     it('will emit error during respawn', function(done) {
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestRavencoinService = proxyquire('../../lib/services/ravend', {
+      var TestMyntService = proxyquire('../../lib/services/myntd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1833,26 +1833,26 @@ describe('Ravencoin Service', function() {
           spawn: spawn
         }
       });
-      var ravend = new TestRavencoinService(baseConfig);
-      ravend._loadSpawnConfiguration = sinon.stub();
-      ravend.spawn = {};
-      ravend.spawn.exec = 'ravend';
-      ravend.spawn.datadir = '/tmp/ravencoin';
-      ravend.spawn.configPath = '/tmp/ravencoin/raven.conf';
-      ravend.spawn.config = {};
-      ravend.spawnRestartTime = 1;
-      ravend._loadTipFromNode = sinon.stub().callsArg(1);
-      ravend._initZmqSubSocket = sinon.stub();
-      ravend._checkReindex = sinon.stub().callsArg(1);
-      ravend._checkSyncedAndSubscribeZmqEvents = sinon.stub();
-      ravend._stopSpawnedRavencoin = sinon.stub().callsArg(0);
-      sinon.spy(ravend, '_spawnChildProcess');
-      ravend._spawnChildProcess(function(err) {
+      var myntd = new TestMyntService(baseConfig);
+      myntd._loadSpawnConfiguration = sinon.stub();
+      myntd.spawn = {};
+      myntd.spawn.exec = 'myntd';
+      myntd.spawn.datadir = '/tmp/mynt';
+      myntd.spawn.configPath = '/tmp/mynt/mynt.conf';
+      myntd.spawn.config = {};
+      myntd.spawnRestartTime = 1;
+      myntd._loadTipFromNode = sinon.stub().callsArg(1);
+      myntd._initZmqSubSocket = sinon.stub();
+      myntd._checkReindex = sinon.stub().callsArg(1);
+      myntd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
+      myntd._stopSpawnedMynt = sinon.stub().callsArg(0);
+      sinon.spy(myntd, '_spawnChildProcess');
+      myntd._spawnChildProcess(function(err) {
         if (err) {
           return done(err);
         }
-        ravend._spawnChildProcess = sinon.stub().callsArgWith(0, new Error('test'));
-        ravend.on('error', function(err) {
+        myntd._spawnChildProcess = sinon.stub().callsArgWith(0, new Error('test'));
+        myntd.on('error', function(err) {
           err.should.be.instanceOf(Error);
           err.message.should.equal('test');
           done();
@@ -1860,10 +1860,10 @@ describe('Ravencoin Service', function() {
         process.emit('exit', 1);
       });
     });
-    it('will NOT respawn ravend spawned process if shutting down', function(done) {
+    it('will NOT respawn myntd spawned process if shutting down', function(done) {
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestRavencoinService = proxyquire('../../lib/services/ravend', {
+      var TestMyntService = proxyquire('../../lib/services/myntd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1873,35 +1873,35 @@ describe('Ravencoin Service', function() {
       });
       var config = {
         node: {
-          network: ravencore.Networks.testnet
+          network: myntcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var ravend = new TestRavencoinService(config);
-      ravend._loadSpawnConfiguration = sinon.stub();
-      ravend.spawn = {};
-      ravend.spawn.exec = 'ravend';
-      ravend.spawn.datadir = '/tmp/ravencoin';
-      ravend.spawn.configPath = '/tmp/ravencoin/raven.conf';
-      ravend.spawn.config = {};
-      ravend.spawnRestartTime = 1;
-      ravend._loadTipFromNode = sinon.stub().callsArg(1);
-      ravend._initZmqSubSocket = sinon.stub();
-      ravend._checkReindex = sinon.stub().callsArg(1);
-      ravend._checkSyncedAndSubscribeZmqEvents = sinon.stub();
-      ravend._stopSpawnedRavencoin = sinon.stub().callsArg(0);
-      sinon.spy(ravend, '_spawnChildProcess');
-      ravend._spawnChildProcess(function(err) {
+      var myntd = new TestMyntService(config);
+      myntd._loadSpawnConfiguration = sinon.stub();
+      myntd.spawn = {};
+      myntd.spawn.exec = 'myntd';
+      myntd.spawn.datadir = '/tmp/mynt';
+      myntd.spawn.configPath = '/tmp/mynt/mynt.conf';
+      myntd.spawn.config = {};
+      myntd.spawnRestartTime = 1;
+      myntd._loadTipFromNode = sinon.stub().callsArg(1);
+      myntd._initZmqSubSocket = sinon.stub();
+      myntd._checkReindex = sinon.stub().callsArg(1);
+      myntd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
+      myntd._stopSpawnedMynt = sinon.stub().callsArg(0);
+      sinon.spy(myntd, '_spawnChildProcess');
+      myntd._spawnChildProcess(function(err) {
         if (err) {
           return done(err);
         }
-        ravend.node.stopping = true;
+        myntd.node.stopping = true;
         process.once('exit', function() {
           setTimeout(function() {
-            ravend._spawnChildProcess.callCount.should.equal(1);
+            myntd._spawnChildProcess.callCount.should.equal(1);
             done();
           }, 5);
         });
@@ -1911,7 +1911,7 @@ describe('Ravencoin Service', function() {
     it('will give error after 60 retries', function(done) {
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestRavencoinService = proxyquire('../../lib/services/ravend', {
+      var TestMyntService = proxyquire('../../lib/services/myntd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1919,21 +1919,21 @@ describe('Ravencoin Service', function() {
           spawn: spawn
         }
       });
-      var ravend = new TestRavencoinService(baseConfig);
-      ravend.startRetryInterval = 1;
-      ravend._loadSpawnConfiguration = sinon.stub();
-      ravend.spawn = {};
-      ravend.spawn.exec = 'testexec';
-      ravend.spawn.configPath = 'testdir/raven.conf';
-      ravend.spawn.datadir = 'testdir';
-      ravend.spawn.config = {};
-      ravend.spawn.config.rpcport = 20001;
-      ravend.spawn.config.rpcuser = 'ravencoin';
-      ravend.spawn.config.rpcpassword = 'password';
-      ravend.spawn.config.zmqpubrawtx = 'tcp://127.0.0.1:30001';
-      ravend._loadTipFromNode = sinon.stub().callsArgWith(1, new Error('test'));
-      ravend._spawnChildProcess(function(err) {
-        ravend._loadTipFromNode.callCount.should.equal(60);
+      var myntd = new TestMyntService(baseConfig);
+      myntd.startRetryInterval = 1;
+      myntd._loadSpawnConfiguration = sinon.stub();
+      myntd.spawn = {};
+      myntd.spawn.exec = 'testexec';
+      myntd.spawn.configPath = 'testdir/mynt.conf';
+      myntd.spawn.datadir = 'testdir';
+      myntd.spawn.config = {};
+      myntd.spawn.config.rpcport = 20001;
+      myntd.spawn.config.rpcuser = 'mynt';
+      myntd.spawn.config.rpcpassword = 'password';
+      myntd.spawn.config.zmqpubrawtx = 'tcp://127.0.0.1:30001';
+      myntd._loadTipFromNode = sinon.stub().callsArgWith(1, new Error('test'));
+      myntd._spawnChildProcess(function(err) {
+        myntd._loadTipFromNode.callCount.should.equal(60);
         err.should.be.instanceof(Error);
         done();
       });
@@ -1941,7 +1941,7 @@ describe('Ravencoin Service', function() {
     it('will give error from check reindex', function(done) {
       var process = new EventEmitter();
       var spawn = sinon.stub().returns(process);
-      var TestRavencoinService = proxyquire('../../lib/services/ravend', {
+      var TestMyntService = proxyquire('../../lib/services/myntd', {
         fs: {
           readFileSync: readFileSync
         },
@@ -1949,25 +1949,25 @@ describe('Ravencoin Service', function() {
           spawn: spawn
         }
       });
-      var ravend = new TestRavencoinService(baseConfig);
+      var myntd = new TestMyntService(baseConfig);
 
-      ravend._loadSpawnConfiguration = sinon.stub();
-      ravend.spawn = {};
-      ravend.spawn.exec = 'testexec';
-      ravend.spawn.configPath = 'testdir/raven.conf';
-      ravend.spawn.datadir = 'testdir';
-      ravend.spawn.config = {};
-      ravend.spawn.config.rpcport = 20001;
-      ravend.spawn.config.rpcuser = 'ravencoin';
-      ravend.spawn.config.rpcpassword = 'password';
-      ravend.spawn.config.zmqpubrawtx = 'tcp://127.0.0.1:30001';
+      myntd._loadSpawnConfiguration = sinon.stub();
+      myntd.spawn = {};
+      myntd.spawn.exec = 'testexec';
+      myntd.spawn.configPath = 'testdir/mynt.conf';
+      myntd.spawn.datadir = 'testdir';
+      myntd.spawn.config = {};
+      myntd.spawn.config.rpcport = 20001;
+      myntd.spawn.config.rpcuser = 'mynt';
+      myntd.spawn.config.rpcpassword = 'password';
+      myntd.spawn.config.zmqpubrawtx = 'tcp://127.0.0.1:30001';
 
-      ravend._loadTipFromNode = sinon.stub().callsArgWith(1, null);
-      ravend._initZmqSubSocket = sinon.stub();
-      ravend._checkSyncedAndSubscribeZmqEvents = sinon.stub();
-      ravend._checkReindex = sinon.stub().callsArgWith(1, new Error('test'));
+      myntd._loadTipFromNode = sinon.stub().callsArgWith(1, null);
+      myntd._initZmqSubSocket = sinon.stub();
+      myntd._checkSyncedAndSubscribeZmqEvents = sinon.stub();
+      myntd._checkReindex = sinon.stub().callsArgWith(1, new Error('test'));
 
-      ravend._spawnChildProcess(function(err) {
+      myntd._spawnChildProcess(function(err) {
         err.should.be.instanceof(Error);
         done();
       });
@@ -1978,46 +1978,46 @@ describe('Ravencoin Service', function() {
     it('will give error if connecting while shutting down', function(done) {
       var config = {
         node: {
-          network: ravencore.Networks.testnet
+          network: myntcore.Networks.testnet
         },
         spawn: {
           datadir: 'testdir',
           exec: 'testpath'
         }
       };
-      var ravend = new RavencoinService(config);
-      ravend.node.stopping = true;
-      ravend.startRetryInterval = 100;
-      ravend._loadTipFromNode = sinon.stub();
-      ravend._connectProcess({}, function(err) {
+      var myntd = new MyntService(config);
+      myntd.node.stopping = true;
+      myntd.startRetryInterval = 100;
+      myntd._loadTipFromNode = sinon.stub();
+      myntd._connectProcess({}, function(err) {
         err.should.be.instanceof(Error);
         err.message.should.match(/Stopping while trying to connect/);
-        ravend._loadTipFromNode.callCount.should.equal(0);
+        myntd._loadTipFromNode.callCount.should.equal(0);
         done();
       });
     });
     it('will give error from loadTipFromNode after 60 retries', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._loadTipFromNode = sinon.stub().callsArgWith(1, new Error('test'));
-      ravend.startRetryInterval = 1;
+      var myntd = new MyntService(baseConfig);
+      myntd._loadTipFromNode = sinon.stub().callsArgWith(1, new Error('test'));
+      myntd.startRetryInterval = 1;
       var config = {};
-      ravend._connectProcess(config, function(err) {
+      myntd._connectProcess(config, function(err) {
         err.should.be.instanceof(Error);
-        ravend._loadTipFromNode.callCount.should.equal(60);
+        myntd._loadTipFromNode.callCount.should.equal(60);
         done();
       });
     });
     it('will init zmq/rpc on node', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._initZmqSubSocket = sinon.stub();
-      ravend._subscribeZmqEvents = sinon.stub();
-      ravend._loadTipFromNode = sinon.stub().callsArgWith(1, null);
+      var myntd = new MyntService(baseConfig);
+      myntd._initZmqSubSocket = sinon.stub();
+      myntd._subscribeZmqEvents = sinon.stub();
+      myntd._loadTipFromNode = sinon.stub().callsArgWith(1, null);
       var config = {};
-      ravend._connectProcess(config, function(err, node) {
+      myntd._connectProcess(config, function(err, node) {
         should.not.exist(err);
-        ravend._loadTipFromNode.callCount.should.equal(1);
-        ravend._initZmqSubSocket.callCount.should.equal(1);
-        ravend._loadTipFromNode.callCount.should.equal(1);
+        myntd._loadTipFromNode.callCount.should.equal(1);
+        myntd._initZmqSubSocket.callCount.should.equal(1);
+        myntd._loadTipFromNode.callCount.should.equal(1);
         should.exist(node);
         should.exist(node.client);
         done();
@@ -2034,69 +2034,69 @@ describe('Ravencoin Service', function() {
       sandbox.restore();
     });
     it('will give error if "spawn" and "connect" are both not configured', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.options = {};
-      ravend.start(function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd.options = {};
+      myntd.start(function(err) {
         err.should.be.instanceof(Error);
-        err.message.should.match(/Ravencoin configuration options/);
+        err.message.should.match(/Mynt configuration options/);
       });
       done();
     });
     it('will give error from spawnChildProcess', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._spawnChildProcess = sinon.stub().callsArgWith(0, new Error('test'));
-      ravend.options = {
+      var myntd = new MyntService(baseConfig);
+      myntd._spawnChildProcess = sinon.stub().callsArgWith(0, new Error('test'));
+      myntd.options = {
         spawn: {}
       };
-      ravend.start(function(err) {
+      myntd.start(function(err) {
         err.should.be.instanceof(Error);
         err.message.should.equal('test');
         done();
       });
     });
     it('will give error from connectProcess', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._connectProcess = sinon.stub().callsArgWith(1, new Error('test'));
-      ravend.options = {
+      var myntd = new MyntService(baseConfig);
+      myntd._connectProcess = sinon.stub().callsArgWith(1, new Error('test'));
+      myntd.options = {
         connect: [
           {}
         ]
       };
-      ravend.start(function(err) {
-        ravend._connectProcess.callCount.should.equal(1);
+      myntd.start(function(err) {
+        myntd._connectProcess.callCount.should.equal(1);
         err.should.be.instanceof(Error);
         err.message.should.equal('test');
         done();
       });
     });
     it('will push node from spawnChildProcess', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var node = {};
-      ravend._initChain = sinon.stub().callsArg(0);
-      ravend._spawnChildProcess = sinon.stub().callsArgWith(0, null, node);
-      ravend.options = {
+      myntd._initChain = sinon.stub().callsArg(0);
+      myntd._spawnChildProcess = sinon.stub().callsArgWith(0, null, node);
+      myntd.options = {
         spawn: {}
       };
-      ravend.start(function(err) {
+      myntd.start(function(err) {
         should.not.exist(err);
-        ravend.nodes.length.should.equal(1);
+        myntd.nodes.length.should.equal(1);
         done();
       });
     });
     it('will push node from connectProcess', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._initChain = sinon.stub().callsArg(0);
+      var myntd = new MyntService(baseConfig);
+      myntd._initChain = sinon.stub().callsArg(0);
       var nodes = [{}];
-      ravend._connectProcess = sinon.stub().callsArgWith(1, null, nodes);
-      ravend.options = {
+      myntd._connectProcess = sinon.stub().callsArgWith(1, null, nodes);
+      myntd.options = {
         connect: [
           {}
         ]
       };
-      ravend.start(function(err) {
+      myntd.start(function(err) {
         should.not.exist(err);
-        ravend._connectProcess.callCount.should.equal(1);
-        ravend.nodes.length.should.equal(1);
+        myntd._connectProcess.callCount.should.equal(1);
+        myntd.nodes.length.should.equal(1);
         done();
       });
     });
@@ -2104,18 +2104,18 @@ describe('Ravencoin Service', function() {
 
   describe('#isSynced', function() {
     it('will give error from syncPercentage', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.syncPercentage = sinon.stub().callsArgWith(0, new Error('test'));
-      ravend.isSynced(function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd.syncPercentage = sinon.stub().callsArgWith(0, new Error('test'));
+      myntd.isSynced(function(err) {
         should.exist(err);
         err.message.should.equal('test');
         done();
       });
     });
     it('will give "true" if percentage is 100.00', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.syncPercentage = sinon.stub().callsArgWith(0, null, 100.00);
-      ravend.isSynced(function(err, synced) {
+      var myntd = new MyntService(baseConfig);
+      myntd.syncPercentage = sinon.stub().callsArgWith(0, null, 100.00);
+      myntd.isSynced(function(err, synced) {
         if (err) {
           return done(err);
         }
@@ -2124,9 +2124,9 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will give "true" if percentage is 99.98', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.syncPercentage = sinon.stub().callsArgWith(0, null, 99.98);
-      ravend.isSynced(function(err, synced) {
+      var myntd = new MyntService(baseConfig);
+      myntd.syncPercentage = sinon.stub().callsArgWith(0, null, 99.98);
+      myntd.isSynced(function(err, synced) {
         if (err) {
           return done(err);
         }
@@ -2135,9 +2135,9 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will give "false" if percentage is 99.49', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.syncPercentage = sinon.stub().callsArgWith(0, null, 99.49);
-      ravend.isSynced(function(err, synced) {
+      var myntd = new MyntService(baseConfig);
+      myntd.syncPercentage = sinon.stub().callsArgWith(0, null, 99.49);
+      myntd.isSynced(function(err, synced) {
         if (err) {
           return done(err);
         }
@@ -2146,9 +2146,9 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will give "false" if percentage is 1', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.syncPercentage = sinon.stub().callsArgWith(0, null, 1);
-      ravend.isSynced(function(err, synced) {
+      var myntd = new MyntService(baseConfig);
+      myntd.syncPercentage = sinon.stub().callsArgWith(0, null, 1);
+      myntd.isSynced(function(err, synced) {
         if (err) {
           return done(err);
         }
@@ -2160,32 +2160,32 @@ describe('Ravencoin Service', function() {
 
   describe('#syncPercentage', function() {
     it('will give rpc error', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockchainInfo = sinon.stub().callsArgWith(0, {message: 'error', code: -1});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockchainInfo: getBlockchainInfo
         }
       });
-      ravend.syncPercentage(function(err) {
+      myntd.syncPercentage(function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will call client getInfo and give result', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockchainInfo = sinon.stub().callsArgWith(0, null, {
         result: {
           verificationprogress: '0.983821387'
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockchainInfo: getBlockchainInfo
         }
       });
-      ravend.syncPercentage(function(err, percentage) {
+      myntd.syncPercentage(function(err, percentage) {
         if (err) {
           return done(err);
         }
@@ -2197,54 +2197,54 @@ describe('Ravencoin Service', function() {
 
   describe('#_normalizeAddressArg', function() {
     it('will turn single address into array', function() {
-      var ravend = new RavencoinService(baseConfig);
-      var args = ravend._normalizeAddressArg('address');
+      var myntd = new MyntService(baseConfig);
+      var args = myntd._normalizeAddressArg('address');
       args.should.deep.equal(['address']);
     });
     it('will keep an array as an array', function() {
-      var ravend = new RavencoinService(baseConfig);
-      var args = ravend._normalizeAddressArg(['address', 'address']);
+      var myntd = new MyntService(baseConfig);
+      var args = myntd._normalizeAddressArg(['address', 'address']);
       args.should.deep.equal(['address', 'address']);
     });
   });
 
   describe('#getAddressBalance', function() {
     it('will give rpc error', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getAddressBalance: sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'})
         }
       });
       var address = 'RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN';
       var options = {};
-      ravend.getAddressBalance(address, options, function(err) {
+      myntd.getAddressBalance(address, options, function(err) {
         err.should.be.instanceof(Error);
         done();
       });
     });
     it('will give balance', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getAddressBalance = sinon.stub().callsArgWith(1, null, {
         result: {
           received: 100000,
           balance: 10000
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressBalance: getAddressBalance
         }
       });
       var address = 'RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN';
       var options = {};
-      ravend.getAddressBalance(address, options, function(err, data) {
+      myntd.getAddressBalance(address, options, function(err, data) {
         if (err) {
           return done(err);
         }
         data.balance.should.equal(10000);
         data.received.should.equal(100000);
-        ravend.getAddressBalance(address, options, function(err, data2) {
+        myntd.getAddressBalance(address, options, function(err, data2) {
           if (err) {
             return done(err);
           }
@@ -2259,8 +2259,8 @@ describe('Ravencoin Service', function() {
 
   describe('#getAddressUnspentOutputs', function() {
     it('will give rpc error', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'})
         }
@@ -2269,14 +2269,14 @@ describe('Ravencoin Service', function() {
         queryMempool: false
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressUnspentOutputs(address, options, function(err) {
+      myntd.getAddressUnspentOutputs(address, options, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
         done();
       });
     });
     it('will give results from client getaddressutxos', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var expectedUtxos = [
         {
           address: 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja',
@@ -2287,7 +2287,7 @@ describe('Ravencoin Service', function() {
           height: 207111
         }
       ];
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: expectedUtxos
@@ -2298,7 +2298,7 @@ describe('Ravencoin Service', function() {
         queryMempool: false
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      myntd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2308,7 +2308,7 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will use cache', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var expectedUtxos = [
         {
           address: 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja',
@@ -2322,7 +2322,7 @@ describe('Ravencoin Service', function() {
       var getAddressUtxos = sinon.stub().callsArgWith(1, null, {
         result: expectedUtxos
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressUtxos: getAddressUtxos
         }
@@ -2331,14 +2331,14 @@ describe('Ravencoin Service', function() {
         queryMempool: false
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      myntd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
         utxos.length.should.equal(1);
         utxos.should.deep.equal(expectedUtxos);
         getAddressUtxos.callCount.should.equal(1);
-        ravend.getAddressUnspentOutputs(address, options, function(err, utxos) {
+        myntd.getAddressUnspentOutputs(address, options, function(err, utxos) {
           if (err) {
             return done(err);
           }
@@ -2375,7 +2375,7 @@ describe('Ravencoin Service', function() {
           timestamp: 1461342954813
         }
       ];
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var confirmedUtxos = [
         {
           address: 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja',
@@ -2404,7 +2404,7 @@ describe('Ravencoin Service', function() {
           txid: 'f637384e9f81f18767ea50e00bce58fc9848b6588a1130529eebba22a410155f'
         }
       ];
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: confirmedUtxos
@@ -2418,7 +2418,7 @@ describe('Ravencoin Service', function() {
         queryMempool: true
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      myntd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2448,7 +2448,7 @@ describe('Ravencoin Service', function() {
           prevout: 2
         }
       ];
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var confirmedUtxos = [
         {
           address: 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja',
@@ -2467,7 +2467,7 @@ describe('Ravencoin Service', function() {
           height: 207111
         }
       ];
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: confirmedUtxos
@@ -2481,7 +2481,7 @@ describe('Ravencoin Service', function() {
         queryMempool: true
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      myntd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2527,7 +2527,7 @@ describe('Ravencoin Service', function() {
           timestamp: 1461342833133
         }
       ];
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var confirmedUtxos = [
         {
           address: 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja',
@@ -2554,7 +2554,7 @@ describe('Ravencoin Service', function() {
           height: 207111
         }
       ];
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: confirmedUtxos
@@ -2568,7 +2568,7 @@ describe('Ravencoin Service', function() {
         queryMempool: true
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      myntd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2634,9 +2634,9 @@ describe('Ravencoin Service', function() {
           timestamp: 1461342833133
         }
       ];
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var confirmedUtxos = [];
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: confirmedUtxos
@@ -2650,7 +2650,7 @@ describe('Ravencoin Service', function() {
         queryMempool: true
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      myntd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2675,7 +2675,7 @@ describe('Ravencoin Service', function() {
           prevout: 1
         }
       ];
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var confirmedUtxos = [
         {
           address: 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja',
@@ -2686,7 +2686,7 @@ describe('Ravencoin Service', function() {
           height: 207111
         }
       ];
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: confirmedUtxos
@@ -2700,7 +2700,7 @@ describe('Ravencoin Service', function() {
         queryMempool: true
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      myntd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2718,7 +2718,7 @@ describe('Ravencoin Service', function() {
           timestamp: 1461342707725
         }
       ];
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var confirmedUtxos = [
         {
           address: 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja',
@@ -2729,7 +2729,7 @@ describe('Ravencoin Service', function() {
           height: 207111
         }
       ];
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressUtxos: sinon.stub().callsArgWith(1, null, {
             result: confirmedUtxos
@@ -2743,7 +2743,7 @@ describe('Ravencoin Service', function() {
         queryMempool: true
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressUnspentOutputs(address, options, function(err, utxos) {
+      myntd.getAddressUnspentOutputs(address, options, function(err, utxos) {
         if (err) {
           return done(err);
         }
@@ -2752,8 +2752,8 @@ describe('Ravencoin Service', function() {
       });
     });
     it('it will handle error from getAddressMempool', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, {code: -1, message: 'test'})
         }
@@ -2762,22 +2762,22 @@ describe('Ravencoin Service', function() {
         queryMempool: true
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressUnspentOutputs(address, options, function(err) {
+      myntd.getAddressUnspentOutputs(address, options, function(err) {
         err.should.be.instanceOf(Error);
         done();
       });
     });
     it('should set query mempool if undefined', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getAddressMempool = sinon.stub().callsArgWith(1, {code: -1, message: 'test'});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressMempool: getAddressMempool
         }
       });
       var options = {};
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressUnspentOutputs(address, options, function(err) {
+      myntd.getAddressUnspentOutputs(address, options, function(err) {
         getAddressMempool.callCount.should.equal(1);
         done();
       });
@@ -2786,7 +2786,7 @@ describe('Ravencoin Service', function() {
 
   describe('#_getBalanceFromMempool', function() {
     it('will sum satoshis', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var deltas = [
         {
           satoshis: -1000,
@@ -2798,14 +2798,14 @@ describe('Ravencoin Service', function() {
           satoshis: -10,
         }
       ];
-      var sum = ravend._getBalanceFromMempool(deltas);
+      var sum = myntd._getBalanceFromMempool(deltas);
       sum.should.equal(990);
     });
   });
 
   describe('#_getTxidsFromMempool', function() {
     it('will filter to txids', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var deltas = [
         {
           txid: 'txid0',
@@ -2817,14 +2817,14 @@ describe('Ravencoin Service', function() {
           txid: 'txid2',
         }
       ];
-      var txids = ravend._getTxidsFromMempool(deltas);
+      var txids = myntd._getTxidsFromMempool(deltas);
       txids.length.should.equal(3);
       txids[0].should.equal('txid0');
       txids[1].should.equal('txid1');
       txids[2].should.equal('txid2');
     });
     it('will not include duplicates', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var deltas = [
         {
           txid: 'txid0',
@@ -2836,7 +2836,7 @@ describe('Ravencoin Service', function() {
           txid: 'txid1',
         }
       ];
-      var txids = ravend._getTxidsFromMempool(deltas);
+      var txids = myntd._getTxidsFromMempool(deltas);
       txids.length.should.equal(2);
       txids[0].should.equal('txid0');
       txids[1].should.equal('txid1');
@@ -2845,64 +2845,64 @@ describe('Ravencoin Service', function() {
 
   describe('#_getHeightRangeQuery', function() {
     it('will detect range query', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var options = {
         start: 20,
         end: 0
       };
-      var rangeQuery = ravend._getHeightRangeQuery(options);
+      var rangeQuery = myntd._getHeightRangeQuery(options);
       rangeQuery.should.equal(true);
     });
     it('will get range properties', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var options = {
         start: 20,
         end: 0
       };
       var clone = {};
-      ravend._getHeightRangeQuery(options, clone);
+      myntd._getHeightRangeQuery(options, clone);
       clone.end.should.equal(20);
       clone.start.should.equal(0);
     });
     it('will throw error with invalid range', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var options = {
         start: 0,
         end: 20
       };
       (function() {
-        ravend._getHeightRangeQuery(options);
+        myntd._getHeightRangeQuery(options);
       }).should.throw('"end" is expected');
     });
   });
 
   describe('#getAddressTxids', function() {
     it('will give error from _getHeightRangeQuery', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._getHeightRangeQuery = sinon.stub().throws(new Error('test'));
-      ravend.getAddressTxids('address', {}, function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd._getHeightRangeQuery = sinon.stub().throws(new Error('test'));
+      myntd.getAddressTxids('address', {}, function(err) {
         err.should.be.instanceOf(Error);
         err.message.should.equal('test');
         done();
       });
     });
     it('will give rpc error from mempool query', function() {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'})
         }
       });
       var options = {};
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressTxids(address, options, function(err) {
+      myntd.getAddressTxids(address, options, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
       });
     });
     it('will give rpc error from txids query', function() {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getAddressTxids: sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'})
         }
@@ -2911,7 +2911,7 @@ describe('Ravencoin Service', function() {
         queryMempool: false
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressTxids(address, options, function(err) {
+      myntd.getAddressTxids(address, options, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
       });
@@ -2929,8 +2929,8 @@ describe('Ravencoin Service', function() {
         'ed11a08e3102f9610bda44c80c46781d97936a4290691d87244b1b345b39a693',
         'ec94d845c603f292a93b7c829811ac624b76e52b351617ca5a758e9d61a11681'
       ];
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getAddressTxids: sinon.stub().callsArgWith(1, null, {
             result: expectedTxids.reverse()
@@ -2941,7 +2941,7 @@ describe('Ravencoin Service', function() {
         queryMempool: false
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressTxids(address, options, function(err, txids) {
+      myntd.getAddressTxids(address, options, function(err, txids) {
         if (err) {
           return done(err);
         }
@@ -2954,11 +2954,11 @@ describe('Ravencoin Service', function() {
       var expectedTxids = [
         'e9dcf22807db77ac0276b03cc2d3a8b03c4837db8ac6650501ef45af1c807cce'
       ];
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getAddressTxids = sinon.stub().callsArgWith(1, null, {
         result: expectedTxids.reverse()
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressTxids: getAddressTxids
         }
@@ -2967,14 +2967,14 @@ describe('Ravencoin Service', function() {
         queryMempool: false
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressTxids(address, options, function(err, txids) {
+      myntd.getAddressTxids(address, options, function(err, txids) {
         if (err) {
           return done(err);
         }
         getAddressTxids.callCount.should.equal(1);
         txids.should.deep.equal(expectedTxids);
 
-        ravend.getAddressTxids(address, options, function(err, txids) {
+        myntd.getAddressTxids(address, options, function(err, txids) {
           if (err) {
             return done(err);
           }
@@ -2988,12 +2988,12 @@ describe('Ravencoin Service', function() {
       var expectedTxids = [
         'e9dcf22807db77ac0276b03cc2d3a8b03c4837db8ac6650501ef45af1c807cce'
       ];
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getAddressMempool = sinon.stub();
       var getAddressTxids = sinon.stub().callsArgWith(1, null, {
         result: expectedTxids.reverse()
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressTxids: getAddressTxids,
           getAddressMempool: getAddressMempool
@@ -3005,7 +3005,7 @@ describe('Ravencoin Service', function() {
         end: 2
       };
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressTxids(address, options, function(err, txids) {
+      myntd.getAddressTxids(address, options, function(err, txids) {
         if (err) {
           return done(err);
         }
@@ -3013,7 +3013,7 @@ describe('Ravencoin Service', function() {
         getAddressMempool.callCount.should.equal(0);
         txids.should.deep.equal(expectedTxids);
 
-        ravend.getAddressTxids(address, options, function(err, txids) {
+        myntd.getAddressTxids(address, options, function(err, txids) {
           if (err) {
             return done(err);
           }
@@ -3028,7 +3028,7 @@ describe('Ravencoin Service', function() {
       var expectedTxids = [
         'e9dcf22807db77ac0276b03cc2d3a8b03c4837db8ac6650501ef45af1c807cce'
       ];
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getAddressTxids = sinon.stub().callsArgWith(1, null, {
         result: expectedTxids.reverse()
       });
@@ -3045,21 +3045,21 @@ describe('Ravencoin Service', function() {
           }
         ]
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressTxids: getAddressTxids,
           getAddressMempool: getAddressMempool
         }
       });
       var address = 'RM1FZ5Q4sKxsM1a97dLoUrjZYHZ7B6MKja';
-      ravend.getAddressTxids(address, {queryMempool: false}, function(err, txids) {
+      myntd.getAddressTxids(address, {queryMempool: false}, function(err, txids) {
         if (err) {
           return done(err);
         }
         getAddressTxids.callCount.should.equal(1);
         txids.should.deep.equal(expectedTxids);
 
-        ravend.getAddressTxids(address, {queryMempool: true}, function(err, txids) {
+        myntd.getAddressTxids(address, {queryMempool: true}, function(err, txids) {
           if (err) {
             return done(err);
           }
@@ -3071,7 +3071,7 @@ describe('Ravencoin Service', function() {
             'e9dcf22807db77ac0276b03cc2d3a8b03c4837db8ac6650501ef45af1c807cce' // confirmed
           ]);
 
-          ravend.getAddressTxids(address, {queryMempoolOnly: true}, function(err, txids) {
+          myntd.getAddressTxids(address, {queryMempoolOnly: true}, function(err, txids) {
             if (err) {
               return done(err);
             }
@@ -3099,69 +3099,69 @@ describe('Ravencoin Service', function() {
     it('should get 0 confirmation', function() {
       var tx = new Transaction(txhex);
       tx.height = -1;
-      var ravend = new RavencoinService(baseConfig);
-      ravend.height = 10;
-      var confirmations = ravend._getConfirmationsDetail(tx);
+      var myntd = new MyntService(baseConfig);
+      myntd.height = 10;
+      var confirmations = myntd._getConfirmationsDetail(tx);
       confirmations.should.equal(0);
     });
     it('should get 1 confirmation', function() {
       var tx = new Transaction(txhex);
       tx.height = 10;
-      var ravend = new RavencoinService(baseConfig);
-      ravend.height = 10;
-      var confirmations = ravend._getConfirmationsDetail(tx);
+      var myntd = new MyntService(baseConfig);
+      myntd.height = 10;
+      var confirmations = myntd._getConfirmationsDetail(tx);
       confirmations.should.equal(1);
     });
     it('should get 2 confirmation', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var tx = new Transaction(txhex);
-      ravend.height = 11;
+      myntd.height = 11;
       tx.height = 10;
-      var confirmations = ravend._getConfirmationsDetail(tx);
+      var confirmations = myntd._getConfirmationsDetail(tx);
       confirmations.should.equal(2);
     });
     it('should get 0 confirmation with overflow', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var tx = new Transaction(txhex);
-      ravend.height = 3;
+      myntd.height = 3;
       tx.height = 10;
-      var confirmations = ravend._getConfirmationsDetail(tx);
+      var confirmations = myntd._getConfirmationsDetail(tx);
       log.warn.callCount.should.equal(1);
       confirmations.should.equal(0);
     });
     it('should get 1000 confirmation', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var tx = new Transaction(txhex);
-      ravend.height = 1000;
+      myntd.height = 1000;
       tx.height = 1;
-      var confirmations = ravend._getConfirmationsDetail(tx);
+      var confirmations = myntd._getConfirmationsDetail(tx);
       confirmations.should.equal(1000);
     });
   });
 
   describe('#_getAddressDetailsForInput', function() {
     it('will return if missing an address', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var result = {};
-      ravend._getAddressDetailsForInput({}, 0, result, []);
+      myntd._getAddressDetailsForInput({}, 0, result, []);
       should.not.exist(result.addresses);
       should.not.exist(result.satoshis);
     });
     it('will only add address if it matches', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var result = {};
-      ravend._getAddressDetailsForInput({
+      myntd._getAddressDetailsForInput({
         address: 'address1'
       }, 0, result, ['address2']);
       should.not.exist(result.addresses);
       should.not.exist(result.satoshis);
     });
     it('will instantiate if outputIndexes not defined', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var result = {
         addresses: {}
       };
-      ravend._getAddressDetailsForInput({
+      myntd._getAddressDetailsForInput({
         address: 'address1'
       }, 0, result, ['address1']);
       should.exist(result.addresses);
@@ -3169,7 +3169,7 @@ describe('Ravencoin Service', function() {
       result.addresses['address1'].outputIndexes.should.deep.equal([]);
     });
     it('will push to inputIndexes', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var result = {
         addresses: {
           'address1': {
@@ -3177,7 +3177,7 @@ describe('Ravencoin Service', function() {
           }
         }
       };
-      ravend._getAddressDetailsForInput({
+      myntd._getAddressDetailsForInput({
         address: 'address1'
       }, 2, result, ['address1']);
       should.exist(result.addresses);
@@ -3187,27 +3187,27 @@ describe('Ravencoin Service', function() {
 
   describe('#_getAddressDetailsForOutput', function() {
     it('will return if missing an address', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var result = {};
-      ravend._getAddressDetailsForOutput({}, 0, result, []);
+      myntd._getAddressDetailsForOutput({}, 0, result, []);
       should.not.exist(result.addresses);
       should.not.exist(result.satoshis);
     });
     it('will only add address if it matches', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var result = {};
-      ravend._getAddressDetailsForOutput({
+      myntd._getAddressDetailsForOutput({
         address: 'address1'
       }, 0, result, ['address2']);
       should.not.exist(result.addresses);
       should.not.exist(result.satoshis);
     });
     it('will instantiate if outputIndexes not defined', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var result = {
         addresses: {}
       };
-      ravend._getAddressDetailsForOutput({
+      myntd._getAddressDetailsForOutput({
         address: 'address1'
       }, 0, result, ['address1']);
       should.exist(result.addresses);
@@ -3215,7 +3215,7 @@ describe('Ravencoin Service', function() {
       result.addresses['address1'].outputIndexes.should.deep.equal([0]);
     });
     it('will push if outputIndexes defined', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var result = {
         addresses: {
           'address1': {
@@ -3223,7 +3223,7 @@ describe('Ravencoin Service', function() {
           }
         }
       };
-      ravend._getAddressDetailsForOutput({
+      myntd._getAddressDetailsForOutput({
         address: 'address1'
       }, 1, result, ['address1']);
       should.exist(result.addresses);
@@ -3265,9 +3265,9 @@ describe('Ravencoin Service', function() {
         ],
         locktime: 0
       };
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var addresses = ['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'];
-      var details = ravend._getAddressDetailsForTransaction(tx, addresses);
+      var details = myntd._getAddressDetailsForTransaction(tx, addresses);
       should.exist(details.addresses['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW']);
       details.addresses['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'].inputIndexes.should.deep.equal([0]);
       details.addresses['mgY65WSfEmsyYaYPQaXhmXMeBhwp4EcsQW'].outputIndexes.should.deep.equal([
@@ -3284,15 +3284,15 @@ describe('Ravencoin Service', function() {
       var tx = {
         height: 20,
       };
-      var ravend = new RavencoinService(baseConfig);
-      ravend.getDetailedTransaction = sinon.stub().callsArgWith(1, null, tx);
-      ravend.height = 300;
+      var myntd = new MyntService(baseConfig);
+      myntd.getDetailedTransaction = sinon.stub().callsArgWith(1, null, tx);
+      myntd.height = 300;
       var addresses = {};
-      ravend._getAddressDetailsForTransaction = sinon.stub().returns({
+      myntd._getAddressDetailsForTransaction = sinon.stub().returns({
         addresses: addresses,
         satoshis: 1000,
       });
-      ravend._getAddressDetailedTransaction(txid, {}, function(err, details) {
+      myntd._getAddressDetailedTransaction(txid, {}, function(err, details) {
         if (err) {
           return done(err);
         }
@@ -3305,9 +3305,9 @@ describe('Ravencoin Service', function() {
     });
     it('give error from getDetailedTransaction', function(done) {
       var txid = '46f24e0c274fc07708b781963576c4c5d5625d926dbb0a17fa865dcd9fe58ea0';
-      var ravend = new RavencoinService(baseConfig);
-      ravend.getDetailedTransaction = sinon.stub().callsArgWith(1, new Error('test'));
-      ravend._getAddressDetailedTransaction(txid, {}, function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd.getDetailedTransaction = sinon.stub().callsArgWith(1, new Error('test'));
+      myntd._getAddressDetailedTransaction(txid, {}, function(err) {
         err.should.be.instanceof(Error);
         done();
       });
@@ -3315,13 +3315,13 @@ describe('Ravencoin Service', function() {
   });
 
   describe('#_getAddressStrings', function() {
-    it('will get address strings from ravencore addresses', function() {
+    it('will get address strings from myntcore addresses', function() {
       var addresses = [
-        ravencore.Address('RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'),
-        ravencore.Address('rAfsiNFiHsvDwEA1JsaE9Qmad5CgPVbELh'),
+        myntcore.Address('RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'),
+        myntcore.Address('rAfsiNFiHsvDwEA1JsaE9Qmad5CgPVbELh'),
       ];
-      var ravend = new RavencoinService(baseConfig);
-      var strings = ravend._getAddressStrings(addresses);
+      var myntd = new MyntService(baseConfig);
+      var strings = myntd._getAddressStrings(addresses);
       strings[0].should.equal('RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN');
       strings[1].should.equal('rAfsiNFiHsvDwEA1JsaE9Qmad5CgPVbELh');
     });
@@ -3330,63 +3330,63 @@ describe('Ravencoin Service', function() {
         'RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN',
         'rAfsiNFiHsvDwEA1JsaE9Qmad5CgPVbELh',
       ];
-      var ravend = new RavencoinService(baseConfig);
-      var strings = ravend._getAddressStrings(addresses);
+      var myntd = new MyntService(baseConfig);
+      var strings = myntd._getAddressStrings(addresses);
       strings[0].should.equal('RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN');
       strings[1].should.equal('rAfsiNFiHsvDwEA1JsaE9Qmad5CgPVbELh');
     });
     it('will get address strings from mixture of types', function() {
       var addresses = [
-        ravencore.Address('RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'),
+        myntcore.Address('RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'),
         'rAfsiNFiHsvDwEA1JsaE9Qmad5CgPVbELh',
       ];
-      var ravend = new RavencoinService(baseConfig);
-      var strings = ravend._getAddressStrings(addresses);
+      var myntd = new MyntService(baseConfig);
+      var strings = myntd._getAddressStrings(addresses);
       strings[0].should.equal('RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN');
       strings[1].should.equal('rAfsiNFiHsvDwEA1JsaE9Qmad5CgPVbELh');
     });
     it('will give error with unknown', function() {
       var addresses = [
-        ravencore.Address('RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'),
+        myntcore.Address('RJYZeWxr1Ly8YgcvJU1qD5MR9jUtk14HkN'),
         0,
       ];
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       (function() {
-        ravend._getAddressStrings(addresses);
+        myntd._getAddressStrings(addresses);
       }).should.throw(TypeError);
     });
   });
 
   describe('#_paginateTxids', function() {
     it('slice txids based on "from" and "to" (3 to 13)', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      var paginated = ravend._paginateTxids(txids, 3, 13);
+      var paginated = myntd._paginateTxids(txids, 3, 13);
       paginated.should.deep.equal([3, 4, 5, 6, 7, 8, 9, 10]);
     });
     it('slice txids based on "from" and "to" (0 to 3)', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      var paginated = ravend._paginateTxids(txids, 0, 3);
+      var paginated = myntd._paginateTxids(txids, 0, 3);
       paginated.should.deep.equal([0, 1, 2]);
     });
     it('slice txids based on "from" and "to" (0 to 1)', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      var paginated = ravend._paginateTxids(txids, 0, 1);
+      var paginated = myntd._paginateTxids(txids, 0, 1);
       paginated.should.deep.equal([0]);
     });
     it('will throw error if "from" is greater than "to"', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
       (function() {
-        ravend._paginateTxids(txids, 1, 0);
+        myntd._paginateTxids(txids, 1, 0);
       }).should.throw('"from" (1) is expected to be less than "to"');
     });
     it('will handle string numbers', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var txids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      var paginated = ravend._paginateTxids(txids, '1', '3');
+      var paginated = myntd._paginateTxids(txids, '1', '3');
       paginated.should.deep.equal([1, 2]);
     });
   });
@@ -3394,27 +3394,27 @@ describe('Ravencoin Service', function() {
   describe('#getAddressHistory', function() {
     var address = '12c6DSiU4Rq3P4ZxziKxzrL5LmMBrzjrJX';
     it('will give error with "from" and "to" range that exceeds max size', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.getAddressHistory(address, {from: 0, to: 51}, function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd.getAddressHistory(address, {from: 0, to: 51}, function(err) {
         should.exist(err);
         err.message.match(/^\"from/);
         done();
       });
     });
     it('will give error with "from" and "to" order is reversed', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.getAddressTxids = sinon.stub().callsArgWith(2, null, []);
-      ravend.getAddressHistory(address, {from: 51, to: 0}, function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd.getAddressTxids = sinon.stub().callsArgWith(2, null, []);
+      myntd.getAddressHistory(address, {from: 51, to: 0}, function(err) {
         should.exist(err);
         err.message.match(/^\"from/);
         done();
       });
     });
     it('will give error from _getAddressDetailedTransaction', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.getAddressTxids = sinon.stub().callsArgWith(2, null, ['txid']);
-      ravend._getAddressDetailedTransaction = sinon.stub().callsArgWith(2, new Error('test'));
-      ravend.getAddressHistory(address, {}, function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd.getAddressTxids = sinon.stub().callsArgWith(2, null, ['txid']);
+      myntd._getAddressDetailedTransaction = sinon.stub().callsArgWith(2, new Error('test'));
+      myntd.getAddressHistory(address, {}, function(err) {
         should.exist(err);
         err.message.should.equal('test');
         done();
@@ -3425,18 +3425,18 @@ describe('Ravencoin Service', function() {
       for (var i = 0; i < 101; i++) {
         addresses.push(address);
       }
-      var ravend = new RavencoinService(baseConfig);
-      ravend.maxAddressesQuery = 100;
-      ravend.getAddressHistory(addresses, {}, function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd.maxAddressesQuery = 100;
+      myntd.getAddressHistory(addresses, {}, function(err) {
         should.exist(err);
         err.message.match(/Maximum/);
         done();
       });
     });
     it('give error from getAddressTxids', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.getAddressTxids = sinon.stub().callsArgWith(2, new Error('test'));
-      ravend.getAddressHistory('address', {}, function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd.getAddressTxids = sinon.stub().callsArgWith(2, new Error('test'));
+      myntd.getAddressHistory('address', {}, function(err) {
         should.exist(err);
         err.should.be.instanceof(Error);
         err.message.should.equal('test');
@@ -3444,13 +3444,13 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will paginate', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._getAddressDetailedTransaction = function(txid, options, callback) {
+      var myntd = new MyntService(baseConfig);
+      myntd._getAddressDetailedTransaction = function(txid, options, callback) {
         callback(null, txid);
       };
       var txids = ['one', 'two', 'three', 'four'];
-      ravend.getAddressTxids = sinon.stub().callsArgWith(2, null, txids);
-      ravend.getAddressHistory('address', {from: 1, to: 3}, function(err, data) {
+      myntd.getAddressTxids = sinon.stub().callsArgWith(2, null, txids);
+      myntd.getAddressHistory('address', {from: 1, to: 3}, function(err, data) {
         if (err) {
           return done(err);
         }
@@ -3468,8 +3468,8 @@ describe('Ravencoin Service', function() {
     var memtxid1 = 'b1bfa8dbbde790cb46b9763ef3407c1a21c8264b67bfe224f462ec0e1f569e92';
     var memtxid2 = 'e9dcf22807db77ac0276b03cc2d3a8b03c4837db8ac6650501ef45af1c807cce';
     it('will handle error from getAddressTxids', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, null, {
             result: [
@@ -3480,11 +3480,11 @@ describe('Ravencoin Service', function() {
           })
         }
       });
-      ravend.getAddressTxids = sinon.stub().callsArgWith(2, new Error('test'));
-      ravend.getAddressBalance = sinon.stub().callsArgWith(2, null, {});
+      myntd.getAddressTxids = sinon.stub().callsArgWith(2, new Error('test'));
+      myntd.getAddressBalance = sinon.stub().callsArgWith(2, null, {});
       var address = '';
       var options = {};
-      ravend.getAddressSummary(address, options, function(err) {
+      myntd.getAddressSummary(address, options, function(err) {
         should.exist(err);
         err.should.be.instanceof(Error);
         err.message.should.equal('test');
@@ -3492,8 +3492,8 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will handle error from getAddressBalance', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, null, {
             result: [
@@ -3504,11 +3504,11 @@ describe('Ravencoin Service', function() {
           })
         }
       });
-      ravend.getAddressTxids = sinon.stub().callsArgWith(2, null, {});
-      ravend.getAddressBalance = sinon.stub().callsArgWith(2, new Error('test'), {});
+      myntd.getAddressTxids = sinon.stub().callsArgWith(2, null, {});
+      myntd.getAddressBalance = sinon.stub().callsArgWith(2, new Error('test'), {});
       var address = '';
       var options = {};
-      ravend.getAddressSummary(address, options, function(err) {
+      myntd.getAddressSummary(address, options, function(err) {
         should.exist(err);
         err.should.be.instanceof(Error);
         err.message.should.equal('test');
@@ -3516,17 +3516,17 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will handle error from client getAddressMempool', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'})
         }
       });
-      ravend.getAddressTxids = sinon.stub().callsArgWith(2, null, {});
-      ravend.getAddressBalance = sinon.stub().callsArgWith(2, null, {});
+      myntd.getAddressTxids = sinon.stub().callsArgWith(2, null, {});
+      myntd.getAddressBalance = sinon.stub().callsArgWith(2, null, {});
       var address = '';
       var options = {};
-      ravend.getAddressSummary(address, options, function(err) {
+      myntd.getAddressSummary(address, options, function(err) {
         should.exist(err);
         err.should.be.instanceof(Error);
         err.message.should.equal('Test error');
@@ -3534,8 +3534,8 @@ describe('Ravencoin Service', function() {
       });
     });
     it('should set all properties', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, null, {
             result: [
@@ -3551,18 +3551,18 @@ describe('Ravencoin Service', function() {
           })
         }
       });
-      sinon.spy(ravend, '_paginateTxids');
-      ravend.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
-      ravend.getAddressBalance = sinon.stub().callsArgWith(2, null, {
+      sinon.spy(myntd, '_paginateTxids');
+      myntd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
+      myntd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
         balance: 20 * 1e8
       });
       var address = '3NbU8XzUgKyuCgYgZEKsBtUvkTm2r7Xgwj';
       var options = {};
-      ravend.getAddressSummary(address, options, function(err, summary) {
-        ravend._paginateTxids.callCount.should.equal(1);
-        ravend._paginateTxids.args[0][1].should.equal(0);
-        ravend._paginateTxids.args[0][2].should.equal(1000);
+      myntd.getAddressSummary(address, options, function(err, summary) {
+        myntd._paginateTxids.callCount.should.equal(1);
+        myntd._paginateTxids.args[0][1].should.equal(0);
+        myntd._paginateTxids.args[0][2].should.equal(1000);
         summary.appearances.should.equal(3);
         summary.totalReceived.should.equal(3000000000);
         summary.totalSpent.should.equal(1000000000);
@@ -3580,8 +3580,8 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will give error with "from" and "to" range that exceeds max size', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, null, {
             result: [
@@ -3597,8 +3597,8 @@ describe('Ravencoin Service', function() {
           })
         }
       });
-      ravend.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
-      ravend.getAddressBalance = sinon.stub().callsArgWith(2, null, {
+      myntd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
+      myntd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
         balance: 20 * 1e8
       });
@@ -3607,15 +3607,15 @@ describe('Ravencoin Service', function() {
         from: 0,
         to: 1001
       };
-      ravend.getAddressSummary(address, options, function(err) {
+      myntd.getAddressSummary(address, options, function(err) {
         should.exist(err);
         err.message.match(/^\"from/);
         done();
       });
     });
     it('will get from cache with noTxList', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getAddressMempool: sinon.stub().callsArgWith(1, null, {
             result: [
@@ -3631,8 +3631,8 @@ describe('Ravencoin Service', function() {
           })
         }
       });
-      ravend.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
-      ravend.getAddressBalance = sinon.stub().callsArgWith(2, null, {
+      myntd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
+      myntd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
         balance: 20 * 1e8
       });
@@ -3649,29 +3649,29 @@ describe('Ravencoin Service', function() {
         summary.unconfirmedBalance.should.equal(-900001);
         should.not.exist(summary.txids);
       }
-      ravend.getAddressSummary(address, options, function(err, summary) {
+      myntd.getAddressSummary(address, options, function(err, summary) {
         checkSummary(summary);
-        ravend.getAddressTxids.callCount.should.equal(1);
-        ravend.getAddressBalance.callCount.should.equal(1);
-        ravend.getAddressSummary(address, options, function(err, summary) {
+        myntd.getAddressTxids.callCount.should.equal(1);
+        myntd.getAddressBalance.callCount.should.equal(1);
+        myntd.getAddressSummary(address, options, function(err, summary) {
           checkSummary(summary);
-          ravend.getAddressTxids.callCount.should.equal(1);
-          ravend.getAddressBalance.callCount.should.equal(1);
+          myntd.getAddressTxids.callCount.should.equal(1);
+          myntd.getAddressBalance.callCount.should.equal(1);
           done();
         });
       });
     });
     it('will skip querying the mempool with queryMempool set to false', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getAddressMempool = sinon.stub();
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressMempool: getAddressMempool
         }
       });
-      sinon.spy(ravend, '_paginateTxids');
-      ravend.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
-      ravend.getAddressBalance = sinon.stub().callsArgWith(2, null, {
+      sinon.spy(myntd, '_paginateTxids');
+      myntd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
+      myntd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
         balance: 20 * 1e8
       });
@@ -3679,31 +3679,31 @@ describe('Ravencoin Service', function() {
       var options = {
         queryMempool: false
       };
-      ravend.getAddressSummary(address, options, function() {
+      myntd.getAddressSummary(address, options, function() {
         getAddressMempool.callCount.should.equal(0);
         done();
       });
     });
     it('will give error from _paginateTxids', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getAddressMempool = sinon.stub();
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getAddressMempool: getAddressMempool
         }
       });
-      sinon.spy(ravend, '_paginateTxids');
-      ravend.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
-      ravend.getAddressBalance = sinon.stub().callsArgWith(2, null, {
+      sinon.spy(myntd, '_paginateTxids');
+      myntd.getAddressTxids = sinon.stub().callsArgWith(2, null, [txid1, txid2, txid3]);
+      myntd.getAddressBalance = sinon.stub().callsArgWith(2, null, {
         received: 30 * 1e8,
         balance: 20 * 1e8
       });
-      ravend._paginateTxids = sinon.stub().throws(new Error('test'));
+      myntd._paginateTxids = sinon.stub().throws(new Error('test'));
       var address = '3NbU8XzUgKyuCgYgZEKsBtUvkTm2r7Xgwj';
       var options = {
         queryMempool: false
       };
-      ravend.getAddressSummary(address, options, function(err) {
+      myntd.getAddressSummary(address, options, function(err) {
         err.should.be.instanceOf(Error);
         err.message.should.equal('test');
         done();
@@ -3715,53 +3715,53 @@ describe('Ravencoin Service', function() {
     var blockhash = '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b';
     var blockhex = '0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000';
     it('will give rcp error from client getblockhash', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getBlockHash: sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'})
         }
       });
-      ravend.getRawBlock(10, function(err) {
+      myntd.getRawBlock(10, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
         done();
       });
     });
     it('will give rcp error from client getblock', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getBlock: sinon.stub().callsArgWith(2, {code: -1, message: 'Test error'})
         }
       });
-      ravend.getRawBlock(blockhash, function(err) {
+      myntd.getRawBlock(blockhash, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
         done();
       });
     });
     it('will try all nodes for getblock', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockWithError = sinon.stub().callsArgWith(2, {code: -1, message: 'Test error'});
-      ravend.tryAllInterval = 1;
-      ravend.nodes.push({
+      myntd.tryAllInterval = 1;
+      myntd.nodes.push({
         client: {
           getBlock: getBlockWithError
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlock: getBlockWithError
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlock: sinon.stub().callsArgWith(2, null, {
             result: blockhex
           })
         }
       });
-      ravend.getRawBlock(blockhash, function(err, buffer) {
+      myntd.getRawBlock(blockhash, function(err, buffer) {
         if (err) {
           return done(err);
         }
@@ -3771,22 +3771,22 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will get block from cache', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockhex
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlock: getBlock
         }
       });
-      ravend.getRawBlock(blockhash, function(err, buffer) {
+      myntd.getRawBlock(blockhash, function(err, buffer) {
         if (err) {
           return done(err);
         }
         buffer.should.be.instanceof(Buffer);
         getBlock.callCount.should.equal(1);
-        ravend.getRawBlock(blockhash, function(err, buffer) {
+        myntd.getRawBlock(blockhash, function(err, buffer) {
           if (err) {
             return done(err);
           }
@@ -3797,20 +3797,20 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will get block by height', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockhex
       });
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f'
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      ravend.getRawBlock(0, function(err, buffer) {
+      myntd.getRawBlock(0, function(err, buffer) {
         if (err) {
           return done(err);
         }
@@ -3825,128 +3825,128 @@ describe('Ravencoin Service', function() {
   describe('#getBlock', function() {
     var blockhex = '0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c0101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000';
     it('will give an rpc error from client getblock', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, {code: -1, message: 'Test error'});
       var getBlockHash = sinon.stub().callsArgWith(1, null, {});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      ravend.getBlock(0, function(err) {
+      myntd.getBlock(0, function(err) {
         err.should.be.instanceof(Error);
         done();
       });
     });
     it('will give an rpc error from client getblockhash', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockHash = sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      ravend.getBlock(0, function(err) {
+      myntd.getBlock(0, function(err) {
         err.should.be.instanceof(Error);
         done();
       });
     });
-    it('will getblock as ravencore object from height', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+    it('will getblock as myntcore object from height', function(done) {
+      var myntd = new MyntService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockhex
       });
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b'
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      ravend.getBlock(0, function(err, block) {
+      myntd.getBlock(0, function(err, block) {
         should.not.exist(err);
         getBlock.args[0][0].should.equal('00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b');
         getBlock.args[0][1].should.equal(false);
-        block.should.be.instanceof(ravencore.Block);
+        block.should.be.instanceof(myntcore.Block);
         done();
       });
     });
-    it('will getblock as ravencore object', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+    it('will getblock as myntcore object', function(done) {
+      var myntd = new MyntService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockhex
       });
       var getBlockHash = sinon.stub();
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      ravend.getBlock('00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b', function(err, block) {
+      myntd.getBlock('00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b', function(err, block) {
         should.not.exist(err);
         getBlockHash.callCount.should.equal(0);
         getBlock.callCount.should.equal(1);
         getBlock.args[0][0].should.equal('00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b');
         getBlock.args[0][1].should.equal(false);
-        block.should.be.instanceof(ravencore.Block);
+        block.should.be.instanceof(myntcore.Block);
         done();
       });
     });
     it('will get block from cache', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockhex
       });
       var getBlockHash = sinon.stub();
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
       var hash = '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b';
-      ravend.getBlock(hash, function(err, block) {
+      myntd.getBlock(hash, function(err, block) {
         should.not.exist(err);
         getBlockHash.callCount.should.equal(0);
         getBlock.callCount.should.equal(1);
-        block.should.be.instanceof(ravencore.Block);
-        ravend.getBlock(hash, function(err, block) {
+        block.should.be.instanceof(myntcore.Block);
+        myntd.getBlock(hash, function(err, block) {
           should.not.exist(err);
           getBlockHash.callCount.should.equal(0);
           getBlock.callCount.should.equal(1);
-          block.should.be.instanceof(ravencore.Block);
+          block.should.be.instanceof(myntcore.Block);
           done();
         });
       });
     });
     it('will get block from cache with height (but not height)', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockhex
       });
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b'
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlock: getBlock,
           getBlockHash: getBlockHash
         }
       });
-      ravend.getBlock(0, function(err, block) {
+      myntd.getBlock(0, function(err, block) {
         should.not.exist(err);
         getBlockHash.callCount.should.equal(1);
         getBlock.callCount.should.equal(1);
-        block.should.be.instanceof(ravencore.Block);
-        ravend.getBlock(0, function(err, block) {
+        block.should.be.instanceof(myntcore.Block);
+        myntd.getBlock(0, function(err, block) {
           should.not.exist(err);
           getBlockHash.callCount.should.equal(2);
           getBlock.callCount.should.equal(1);
-          block.should.be.instanceof(ravencore.Block);
+          block.should.be.instanceof(myntcore.Block);
           done();
         });
       });
@@ -3955,32 +3955,32 @@ describe('Ravencoin Service', function() {
 
   describe('#getBlockHashesByTimestamp', function() {
     it('should give an rpc error', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockHashes = sinon.stub().callsArgWith(3, {message: 'error', code: -1});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHashes: getBlockHashes
         }
       });
-      ravend.getBlockHashesByTimestamp(1441911000, 1441914000, function(err, hashes) {
+      myntd.getBlockHashesByTimestamp(1441911000, 1441914000, function(err, hashes) {
         should.exist(err);
         err.message.should.equal('error');
         done();
       });
     });
     it('should get the correct block hashes', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var block1 = '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b';
       var block2 = '000000000383752a55a0b2891ce018fd0fdc0b6352502772b034ec282b4a1bf6';
       var getBlockHashes = sinon.stub().callsArgWith(3, null, {
         result: [block2, block1]
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHashes: getBlockHashes
         }
       });
-      ravend.getBlockHashesByTimestamp(1441914000, 1441911000, function(err, hashes) {
+      myntd.getBlockHashesByTimestamp(1441914000, 1441911000, function(err, hashes) {
         should.not.exist(err);
         hashes.should.deep.equal([block2, block1]);
         done();
@@ -3991,45 +3991,45 @@ describe('Ravencoin Service', function() {
   describe('#getBlockHeader', function() {
     var blockhash = '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b';
     it('will give error from getBlockHash', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockHash = sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      ravend.getBlockHeader(10, function(err) {
+      myntd.getBlockHeader(10, function(err) {
         err.should.be.instanceof(Error);
       });
     });
     it('it will give rpc error from client getblockheader', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockHeader = sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHeader: getBlockHeader
         }
       });
-      ravend.getBlockHeader(blockhash, function(err) {
+      myntd.getBlockHeader(blockhash, function(err) {
         err.should.be.instanceof(Error);
       });
     });
     it('it will give rpc error from client getblockhash', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockHeader = sinon.stub();
       var getBlockHash = sinon.stub().callsArgWith(1, {code: -1, message: 'Test error'});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHeader: getBlockHeader,
           getBlockHash: getBlockHash
         }
       });
-      ravend.getBlockHeader(0, function(err) {
+      myntd.getBlockHeader(0, function(err) {
         err.should.be.instanceof(Error);
       });
     });
     it('will give result from client getblockheader (from height)', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var result = {
         hash: '0000000000000a817cd3a74aec2f2246b59eb2cbb1ad730213e6c4a1d68ec2f6',
         version: 536870912,
@@ -4065,20 +4065,20 @@ describe('Ravencoin Service', function() {
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: blockhash
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHeader: getBlockHeader,
           getBlockHash: getBlockHash
         }
       });
-      ravend.getBlockHeader(0, function(err, blockHeader) {
+      myntd.getBlockHeader(0, function(err, blockHeader) {
         should.not.exist(err);
         getBlockHeader.args[0][0].should.equal(blockhash);
         blockHeader.should.deep.equal(result);
       });
     });
     it('will give result from client getblockheader (from hash)', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var result = {
         hash: '0000000000000a817cd3a74aec2f2246b59eb2cbb1ad730213e6c4a1d68ec2f6',
         version: 536870912,
@@ -4112,13 +4112,13 @@ describe('Ravencoin Service', function() {
         }
       });
       var getBlockHash = sinon.stub();
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHeader: getBlockHeader,
           getBlockHash: getBlockHash
         }
       });
-      ravend.getBlockHeader(blockhash, function(err, blockHeader) {
+      myntd.getBlockHeader(blockhash, function(err, blockHeader) {
         should.not.exist(err);
         getBlockHash.callCount.should.equal(0);
         blockHeader.should.deep.equal(result);
@@ -4128,14 +4128,14 @@ describe('Ravencoin Service', function() {
 
   describe('#_maybeGetBlockHash', function() {
     it('will not get block hash with an address', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockHash = sinon.stub();
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      ravend._maybeGetBlockHash('2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br', function(err, hash) {
+      myntd._maybeGetBlockHash('2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br', function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4145,14 +4145,14 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will not get block hash with non zero-nine numeric string', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockHash = sinon.stub();
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      ravend._maybeGetBlockHash('109a', function(err, hash) {
+      myntd._maybeGetBlockHash('109a', function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4162,16 +4162,16 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will get the block hash if argument is a number', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: 'blockhash'
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      ravend._maybeGetBlockHash(10, function(err, hash) {
+      myntd._maybeGetBlockHash(10, function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4181,16 +4181,16 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will get the block hash if argument is a number (as string)', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: 'blockhash'
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      ravend._maybeGetBlockHash('10', function(err, hash) {
+      myntd._maybeGetBlockHash('10', function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4200,23 +4200,23 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will try multiple nodes if one fails', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockHash = sinon.stub().callsArgWith(1, null, {
         result: 'blockhash'
       });
       getBlockHash.onCall(0).callsArgWith(1, {code: -1, message: 'test'});
-      ravend.tryAllInterval = 1;
-      ravend.nodes.push({
+      myntd.tryAllInterval = 1;
+      myntd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      ravend._maybeGetBlockHash(10, function(err, hash) {
+      myntd._maybeGetBlockHash(10, function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4226,20 +4226,20 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will give error from getBlockHash', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlockHash = sinon.stub().callsArgWith(1, {code: -1, message: 'test'});
-      ravend.tryAllInterval = 1;
-      ravend.nodes.push({
+      myntd.tryAllInterval = 1;
+      myntd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlockHash: getBlockHash
         }
       });
-      ravend._maybeGetBlockHash(10, function(err, hash) {
+      myntd._maybeGetBlockHash(10, function(err, hash) {
         getBlockHash.callCount.should.equal(2);
         err.should.be.instanceOf(Error);
         err.message.should.equal('test');
@@ -4252,29 +4252,29 @@ describe('Ravencoin Service', function() {
   describe('#getBlockOverview', function() {
     var blockhash = '00000000050a6d07f583beba2d803296eb1e9d4980c4a20f206c584e89a4f02b';
     it('will handle error from maybeGetBlockHash', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend._maybeGetBlockHash = sinon.stub().callsArgWith(1, new Error('test'));
-      ravend.getBlockOverview(blockhash, function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd._maybeGetBlockHash = sinon.stub().callsArgWith(1, new Error('test'));
+      myntd.getBlockOverview(blockhash, function(err) {
         err.should.be.instanceOf(Error);
         done();
       });
     });
     it('will give error from client.getBlock', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBlock = sinon.stub().callsArgWith(2, {code: -1, message: 'test'});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlock: getBlock
         }
       });
-      ravend.getBlockOverview(blockhash, function(err) {
+      myntd.getBlockOverview(blockhash, function(err) {
         err.should.be.instanceOf(Error);
         err.message.should.equal('test');
         done();
       });
     });
     it('will give expected result', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var blockResult = {
         hash: blockhash,
         version: 536870912,
@@ -4293,7 +4293,7 @@ describe('Ravencoin Service', function() {
       var getBlock = sinon.stub().callsArgWith(2, null, {
         result: blockResult
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBlock: getBlock
         }
@@ -4313,12 +4313,12 @@ describe('Ravencoin Service', function() {
         blockOverview.bits.should.equal('1a13ca10');
         blockOverview.difficulty.should.equal(847779.0710240941);
       }
-      ravend.getBlockOverview(blockhash, function(err, blockOverview) {
+      myntd.getBlockOverview(blockhash, function(err, blockOverview) {
         if (err) {
           return done(err);
         }
         checkBlock(blockOverview);
-        ravend.getBlockOverview(blockhash, function(err, blockOverview) {
+        myntd.getBlockOverview(blockhash, function(err, blockOverview) {
           checkBlock(blockOverview);
           getBlock.callCount.should.equal(1);
           done();
@@ -4329,30 +4329,30 @@ describe('Ravencoin Service', function() {
 
   describe('#estimateFee', function() {
     it('will give rpc error', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var estimateFee = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           estimateFee: estimateFee
         }
       });
-      ravend.estimateFee(1, function(err) {
+      myntd.estimateFee(1, function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will call client estimateFee and give result', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var estimateFee = sinon.stub().callsArgWith(1, null, {
         result: -1
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           estimateFee: estimateFee
         }
       });
-      ravend.estimateFee(1, function(err, feesPerKb) {
+      myntd.estimateFee(1, function(err, feesPerKb) {
         if (err) {
           return done(err);
         }
@@ -4363,31 +4363,31 @@ describe('Ravencoin Service', function() {
   });
 
   describe('#sendTransaction', function(done) {
-    var tx = ravencore.Transaction(txhex);
+    var tx = myntcore.Transaction(txhex);
     it('will give rpc error', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var sendRawTransaction = sinon.stub().callsArgWith(2, {message: 'error', code: -1});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           sendRawTransaction: sendRawTransaction
         }
       });
-      ravend.sendTransaction(txhex, function(err) {
+      myntd.sendTransaction(txhex, function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
       });
     });
     it('will send to client and get hash', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var sendRawTransaction = sinon.stub().callsArgWith(2, null, {
         result: tx.hash
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           sendRawTransaction: sendRawTransaction
         }
       });
-      ravend.sendTransaction(txhex, function(err, hash) {
+      myntd.sendTransaction(txhex, function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4395,16 +4395,16 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will send to client with absurd fees and get hash', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var sendRawTransaction = sinon.stub().callsArgWith(2, null, {
         result: tx.hash
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           sendRawTransaction: sendRawTransaction
         }
       });
-      ravend.sendTransaction(txhex, {allowAbsurdFees: true}, function(err, hash) {
+      myntd.sendTransaction(txhex, {allowAbsurdFees: true}, function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4412,60 +4412,60 @@ describe('Ravencoin Service', function() {
       });
     });
     it('missing callback will throw error', function() {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var sendRawTransaction = sinon.stub().callsArgWith(2, null, {
         result: tx.hash
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           sendRawTransaction: sendRawTransaction
         }
       });
-      var transaction = ravencore.Transaction();
+      var transaction = myntcore.Transaction();
       (function() {
-        ravend.sendTransaction(transaction);
+        myntd.sendTransaction(transaction);
       }).should.throw(Error);
     });
   });
 
   describe('#getRawTransaction', function() {
     it('will give rpc error', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getRawTransaction = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
       });
-      ravend.getRawTransaction('txid', function(err) {
+      myntd.getRawTransaction('txid', function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will try all nodes', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.tryAllInterval = 1;
+      var myntd = new MyntService(baseConfig);
+      myntd.tryAllInterval = 1;
       var getRawTransactionWithError = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
       var getRawTransaction = sinon.stub().callsArgWith(1, null, {
         result: txhex
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: getRawTransactionWithError
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: getRawTransactionWithError
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
       });
-      ravend.getRawTransaction('txid', function(err, tx) {
+      myntd.getRawTransaction('txid', function(err, tx) {
         if (err) {
           return done(err);
         }
@@ -4475,23 +4475,23 @@ describe('Ravencoin Service', function() {
       });
     });
     it('will get from cache', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getRawTransaction = sinon.stub().callsArgWith(1, null, {
         result: txhex
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
       });
-      ravend.getRawTransaction('txid', function(err, tx) {
+      myntd.getRawTransaction('txid', function(err, tx) {
         if (err) {
           return done(err);
         }
         should.exist(tx);
         tx.should.be.an.instanceof(Buffer);
 
-        ravend.getRawTransaction('txid', function(err, tx) {
+        myntd.getRawTransaction('txid', function(err, tx) {
           should.exist(tx);
           tx.should.be.an.instanceof(Buffer);
           getRawTransaction.callCount.should.equal(1);
@@ -4503,70 +4503,70 @@ describe('Ravencoin Service', function() {
 
   describe('#getTransaction', function() {
     it('will give rpc error', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getRawTransaction = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
       });
-      ravend.getTransaction('txid', function(err) {
+      myntd.getTransaction('txid', function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will try all nodes', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.tryAllInterval = 1;
+      var myntd = new MyntService(baseConfig);
+      myntd.tryAllInterval = 1;
       var getRawTransactionWithError = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
       var getRawTransaction = sinon.stub().callsArgWith(1, null, {
         result: txhex
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: getRawTransactionWithError
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: getRawTransactionWithError
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
       });
-      ravend.getTransaction('txid', function(err, tx) {
+      myntd.getTransaction('txid', function(err, tx) {
         if (err) {
           return done(err);
         }
         should.exist(tx);
-        tx.should.be.an.instanceof(ravencore.Transaction);
+        tx.should.be.an.instanceof(myntcore.Transaction);
         done();
       });
     });
     it('will get from cache', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getRawTransaction = sinon.stub().callsArgWith(1, null, {
         result: txhex
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
       });
-      ravend.getTransaction('txid', function(err, tx) {
+      myntd.getTransaction('txid', function(err, tx) {
         if (err) {
           return done(err);
         }
         should.exist(tx);
-        tx.should.be.an.instanceof(ravencore.Transaction);
+        tx.should.be.an.instanceof(myntcore.Transaction);
 
-        ravend.getTransaction('txid', function(err, tx) {
+        myntd.getTransaction('txid', function(err, tx) {
           should.exist(tx);
-          tx.should.be.an.instanceof(ravencore.Transaction);
+          tx.should.be.an.instanceof(myntcore.Transaction);
           getRawTransaction.callCount.should.equal(1);
           done();
         });
@@ -4618,25 +4618,25 @@ describe('Ravencoin Service', function() {
       ]
     };
     it('should give a transaction with height and timestamp', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.nodes.push({
+      var myntd = new MyntService(baseConfig);
+      myntd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, {code: -1, message: 'Test error'})
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      ravend.getDetailedTransaction(txid, function(err) {
+      myntd.getDetailedTransaction(txid, function(err) {
         should.exist(err);
         err.should.be.instanceof(errors.RPCError);
         done();
       });
     });
     it('should give a transaction with all properties', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getRawTransaction = sinon.stub().callsArgWith(2, null, {
         result: rpcRawTransaction
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: getRawTransaction
         }
@@ -4673,12 +4673,12 @@ describe('Ravencoin Service', function() {
         should.equal(output.spentIndex, 2);
         should.equal(output.spentHeight, 100);
       }
-      ravend.getDetailedTransaction(txid, function(err, tx) {
+      myntd.getDetailedTransaction(txid, function(err, tx) {
         if (err) {
           return done(err);
         }
         checkTx(tx);
-        ravend.getDetailedTransaction(txid, function(err, tx) {
+        myntd.getDetailedTransaction(txid, function(err, tx) {
           if (err) {
             return done(err);
           }
@@ -4689,7 +4689,7 @@ describe('Ravencoin Service', function() {
       });
     });
     it('should set coinbase to true', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var rawTransaction = JSON.parse((JSON.stringify(rpcRawTransaction)));
       delete rawTransaction.vin[0];
       rawTransaction.vin = [
@@ -4697,7 +4697,7 @@ describe('Ravencoin Service', function() {
           coinbase: 'abcdef'
         }
       ];
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, null, {
             result: rawTransaction
@@ -4705,17 +4705,17 @@ describe('Ravencoin Service', function() {
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      ravend.getDetailedTransaction(txid, function(err, tx) {
+      myntd.getDetailedTransaction(txid, function(err, tx) {
         should.exist(tx);
         should.equal(tx.coinbase, true);
         done();
       });
     });
     it('will not include address if address length is zero', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var rawTransaction = JSON.parse((JSON.stringify(rpcRawTransaction)));
       rawTransaction.vout[0].scriptPubKey.addresses = [];
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, null, {
             result: rawTransaction
@@ -4723,17 +4723,17 @@ describe('Ravencoin Service', function() {
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      ravend.getDetailedTransaction(txid, function(err, tx) {
+      myntd.getDetailedTransaction(txid, function(err, tx) {
         should.exist(tx);
         should.equal(tx.outputs[0].address, null);
         done();
       });
     });
     it('will not include address if address length is greater than 1', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var rawTransaction = JSON.parse((JSON.stringify(rpcRawTransaction)));
       rawTransaction.vout[0].scriptPubKey.addresses = ['one', 'two'];
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, null, {
             result: rawTransaction
@@ -4741,17 +4741,17 @@ describe('Ravencoin Service', function() {
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      ravend.getDetailedTransaction(txid, function(err, tx) {
+      myntd.getDetailedTransaction(txid, function(err, tx) {
         should.exist(tx);
         should.equal(tx.outputs[0].address, null);
         done();
       });
     });
     it('will handle scriptPubKey.addresses not being set', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var rawTransaction = JSON.parse((JSON.stringify(rpcRawTransaction)));
       delete rawTransaction.vout[0].scriptPubKey['addresses'];
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, null, {
             result: rawTransaction
@@ -4759,18 +4759,18 @@ describe('Ravencoin Service', function() {
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      ravend.getDetailedTransaction(txid, function(err, tx) {
+      myntd.getDetailedTransaction(txid, function(err, tx) {
         should.exist(tx);
         should.equal(tx.outputs[0].address, null);
         done();
       });
     });
     it('will not include script if input missing scriptSig or coinbase', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var rawTransaction = JSON.parse((JSON.stringify(rpcRawTransaction)));
       delete rawTransaction.vin[0].scriptSig;
       delete rawTransaction.vin[0].coinbase;
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, null, {
             result: rawTransaction
@@ -4778,17 +4778,17 @@ describe('Ravencoin Service', function() {
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      ravend.getDetailedTransaction(txid, function(err, tx) {
+      myntd.getDetailedTransaction(txid, function(err, tx) {
         should.exist(tx);
         should.equal(tx.inputs[0].script, null);
         done();
       });
     });
     it('will set height to -1 if missing height', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var rawTransaction = JSON.parse((JSON.stringify(rpcRawTransaction)));
       delete rawTransaction.height;
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getRawTransaction: sinon.stub().callsArgWith(2, null, {
             result: rawTransaction
@@ -4796,7 +4796,7 @@ describe('Ravencoin Service', function() {
         }
       });
       var txid = '2d950d00494caf6bfc5fff2a3f839f0eb50f663ae85ce092bc5f9d45296ae91f';
-      ravend.getDetailedTransaction(txid, function(err, tx) {
+      myntd.getDetailedTransaction(txid, function(err, tx) {
         should.exist(tx);
         should.equal(tx.height, -1);
         done();
@@ -4806,30 +4806,30 @@ describe('Ravencoin Service', function() {
 
   describe('#getBestBlockHash', function() {
     it('will give rpc error', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, {message: 'error', code: -1});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBestBlockHash: getBestBlockHash
         }
       });
-      ravend.getBestBlockHash(function(err) {
+      myntd.getBestBlockHash(function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will call client getInfo and give result', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getBestBlockHash = sinon.stub().callsArgWith(0, null, {
         result: 'besthash'
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getBestBlockHash: getBestBlockHash
         }
       });
-      ravend.getBestBlockHash(function(err, hash) {
+      myntd.getBestBlockHash(function(err, hash) {
         if (err) {
           return done(err);
         }
@@ -4842,35 +4842,35 @@ describe('Ravencoin Service', function() {
 
   describe('#getSpentInfo', function() {
     it('will give rpc error', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getSpentInfo = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getSpentInfo: getSpentInfo
         }
       });
-      ravend.getSpentInfo({}, function(err) {
+      myntd.getSpentInfo({}, function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will empty object when not found', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getSpentInfo = sinon.stub().callsArgWith(1, {message: 'test', code: -5});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getSpentInfo: getSpentInfo
         }
       });
-      ravend.getSpentInfo({}, function(err, info) {
+      myntd.getSpentInfo({}, function(err, info) {
         should.not.exist(err);
         info.should.deep.equal({});
         done();
       });
     });
     it('will call client getSpentInfo and give result', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getSpentInfo = sinon.stub().callsArgWith(1, null, {
         result: {
           txid: 'txid',
@@ -4878,12 +4878,12 @@ describe('Ravencoin Service', function() {
           height: 101
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getSpentInfo: getSpentInfo
         }
       });
-      ravend.getSpentInfo({}, function(err, info) {
+      myntd.getSpentInfo({}, function(err, info) {
         if (err) {
           return done(err);
         }
@@ -4897,22 +4897,22 @@ describe('Ravencoin Service', function() {
 
   describe('#getInfo', function() {
     it('will give rpc error', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var getInfo = sinon.stub().callsArgWith(0, {message: 'error', code: -1});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getInfo: getInfo
         }
       });
-      ravend.getInfo(function(err) {
+      myntd.getInfo(function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will call client getInfo and give result', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.node.getNetworkName = sinon.stub().returns('testnet');
+      var myntd = new MyntService(baseConfig);
+      myntd.node.getNetworkName = sinon.stub().returns('testnet');
       var getNetworkInfo = sinon.stub().callsArgWith(0, null, {
 		result: {
 		  subversion: '/Satoshi:0.15.99/',
@@ -4933,13 +4933,13 @@ describe('Ravencoin Service', function() {
           errors: ''
         }
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           getInfo: getInfo,
 		  getNetworkInfo: getNetworkInfo
         }
       });
-      ravend.getInfo(function(err, info) {
+      myntd.getInfo(function(err, info) {
         if (err) {
           return done(err);
         }
@@ -4964,30 +4964,30 @@ describe('Ravencoin Service', function() {
 
   describe('#generateBlock', function() {
     it('will give rpc error', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var generate = sinon.stub().callsArgWith(1, {message: 'error', code: -1});
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           generate: generate
         }
       });
-      ravend.generateBlock(10, function(err) {
+      myntd.generateBlock(10, function(err) {
         should.exist(err);
         err.should.be.an.instanceof(errors.RPCError);
         done();
       });
     });
     it('will call client generate and give result', function(done) {
-      var ravend = new RavencoinService(baseConfig);
+      var myntd = new MyntService(baseConfig);
       var generate = sinon.stub().callsArgWith(1, null, {
         result: ['hash']
       });
-      ravend.nodes.push({
+      myntd.nodes.push({
         client: {
           generate: generate
         }
       });
-      ravend.generateBlock(10, function(err, hashes) {
+      myntd.generateBlock(10, function(err, hashes) {
         if (err) {
           return done(err);
         }
@@ -5000,45 +5000,45 @@ describe('Ravencoin Service', function() {
 
   describe('#stop', function() {
     it('will callback if spawn is not set', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.stop(done);
+      var myntd = new MyntService(baseConfig);
+      myntd.stop(done);
     });
     it('will exit spawned process', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.spawn = {};
-      ravend.spawn.process = new EventEmitter();
-      ravend.spawn.process.kill = sinon.stub();
-      ravend.stop(done);
-      ravend.spawn.process.kill.callCount.should.equal(1);
-      ravend.spawn.process.kill.args[0][0].should.equal('SIGINT');
-      ravend.spawn.process.emit('exit', 0);
+      var myntd = new MyntService(baseConfig);
+      myntd.spawn = {};
+      myntd.spawn.process = new EventEmitter();
+      myntd.spawn.process.kill = sinon.stub();
+      myntd.stop(done);
+      myntd.spawn.process.kill.callCount.should.equal(1);
+      myntd.spawn.process.kill.args[0][0].should.equal('SIGINT');
+      myntd.spawn.process.emit('exit', 0);
     });
     it('will give error with non-zero exit status code', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.spawn = {};
-      ravend.spawn.process = new EventEmitter();
-      ravend.spawn.process.kill = sinon.stub();
-      ravend.stop(function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd.spawn = {};
+      myntd.spawn.process = new EventEmitter();
+      myntd.spawn.process.kill = sinon.stub();
+      myntd.stop(function(err) {
         err.should.be.instanceof(Error);
         err.code.should.equal(1);
         done();
       });
-      ravend.spawn.process.kill.callCount.should.equal(1);
-      ravend.spawn.process.kill.args[0][0].should.equal('SIGINT');
-      ravend.spawn.process.emit('exit', 1);
+      myntd.spawn.process.kill.callCount.should.equal(1);
+      myntd.spawn.process.kill.args[0][0].should.equal('SIGINT');
+      myntd.spawn.process.emit('exit', 1);
     });
     it('will stop after timeout', function(done) {
-      var ravend = new RavencoinService(baseConfig);
-      ravend.shutdownTimeout = 300;
-      ravend.spawn = {};
-      ravend.spawn.process = new EventEmitter();
-      ravend.spawn.process.kill = sinon.stub();
-      ravend.stop(function(err) {
+      var myntd = new MyntService(baseConfig);
+      myntd.shutdownTimeout = 300;
+      myntd.spawn = {};
+      myntd.spawn.process = new EventEmitter();
+      myntd.spawn.process.kill = sinon.stub();
+      myntd.stop(function(err) {
         err.should.be.instanceof(Error);
         done();
       });
-      ravend.spawn.process.kill.callCount.should.equal(1);
-      ravend.spawn.process.kill.args[0][0].should.equal('SIGINT');
+      myntd.spawn.process.kill.callCount.should.equal(1);
+      myntd.spawn.process.kill.args[0][0].should.equal('SIGINT');
     });
   });
 
