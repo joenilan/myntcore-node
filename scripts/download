@@ -5,9 +5,9 @@ set -e
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.."
 platform=`uname -a | awk '{print tolower($1)}'`
 arch=`uname -m`
-version="2.1.2"
-url="https://github.com/joenilan/mynt/releases/download"
-tag="v2.1.2"
+version="6.1.1"
+url="https://github.com/project-mynt/mynt/releases/download"
+tag="v6.1.1"
 
 if [ "${platform}" == "linux" ]; then
     if [ "${arch}" == "x86_64" ]; then
