@@ -11,25 +11,25 @@ tag="v6.1.1"
 
 if [ "${platform}" == "linux" ]; then
     if [ "${arch}" == "x86_64" ]; then
-        tarball_name="mynt-${version}-x86_64-linux-static-gnu.tar.gz"
+        tarball_name="mynt-${version}-lin64.tar.gz"
     elif [ "${arch}" == "x86_32" ]; then
-        tarball_name="mynt-${version}-x86_64-linux-static-gnu.tar.gz"
+        tarball_name="mynt-${version}-lin32.tar.gz"
     fi
 elif [ "${platform}" == "darwin" ]; then
-    tarball_name="mynt-x16s-${version}-mac.dmg"
+    tarball_name="mynt-${version}-osx64.tar.gz"
 else
     echo "Mynt binary distribution not available for platform and architecture"
     exit -1
 fi
 
-binary_url="${url}/${tag}/mynt-6.1.1-x86_64-linux-static-gnu.tar.gz"
+binary_url="${url}/${tag}/${tarball_name}"
 shasums_url="${url}/${tag}/SHA256SUMS.asc"
 
 download_myntd() {
 
     cd "${root_dir}/bin"
 
-    echo "Downloading mynt: ${binary_url}"
+    echo "Downloading Mynt: ${binary_url}"
 
     is_curl=true
     if hash curl 2>/dev/null; then
@@ -48,7 +48,7 @@ download_myntd() {
             wget $shasums_url
         fi
         if test -e "${tarball_name}"; then
-            echo "Unpacking mynt distribution"
+            echo "Unpacking Mynt distribution"
             tar -xvzf $tarball_name
             if test $? -eq 0; then
                 ln -sf "mynt-${version}/bin/myntd"
@@ -56,12 +56,12 @@ download_myntd() {
             fi
         fi
     fi
-    echo "Mynt binary distribution could not be downloaded"
+    echo "Myntoin binary distribution could not be downloaded"
     exit -1
 }
 
 verify_download() {
-    echo "Verifying signatures of mynt download"
+    echo "Verifying signatures of Mynt download"
     gpg --verify "${root_dir}/bin/SHA256SUMS.asc"
 
     if hash shasum 2>/dev/null; then
