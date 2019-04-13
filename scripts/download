@@ -22,7 +22,7 @@ else
     exit -1
 fi
 
-binary_url="${url}/${tag}/${tarball_name}"
+binary_url="${url}/${tag}/mynt-6.1.1-x86_64-linux-static-gnu.tar.gz"
 shasums_url="${url}/${tag}/SHA256SUMS.asc"
 
 download_myntd() {
